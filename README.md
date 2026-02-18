@@ -2,7 +2,7 @@
 
 Defects4J の checkout / prompt 生成 / fix / test を `pipeline.py` で実行するための手順です。
 
-## 最初にやること（Docker 起動と bash 入室）
+## 最初にやること（Dockerのセットアップ）
 
 リポジトリルートで以下を実行します。
 
