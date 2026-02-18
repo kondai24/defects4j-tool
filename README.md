@@ -29,6 +29,17 @@ docker exec -it defects4j-container bash
 docker compose down
 ```
 
+## Copilot のセットアップ
+
+Docker セットアップ後に Copilot を使う場合は、以下を実行します。
+
+```bash
+copilot
+```
+
+起動後に `/login` を入力してログインします。  
+ブラウザで信頼/許可のボタンを押し、認証完了後に閉じてください。
+
 ## 個別実行（checkout -> prompt -> fix -> test）
 
 実行順は次の 4 ステップです。
