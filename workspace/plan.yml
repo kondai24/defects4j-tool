@@ -1,0 +1,30 @@
+# Example plan for `python pipeline.py run --plan plan_example.yml`
+
+in_csv: experiment.csv
+
+defaults:
+  steps: [checkout, prompts, fix, test]
+  model: gpt-4.1
+  continue_on_error: true
+  fix_mode: fix
+
+variants:
+  - name: normal-gpt4.1
+    out_dir: Normal_gpt-4.1
+    prompts:
+      type: copy
+      from_dir: Normal
+
+  - name: cot_with_ast-gpt4.1
+    out_dir: CoT-with-AST_gpt-4.1
+    prompts:
+      type: copy
+      # You can reference another variant name (resolved to its out_dir)
+      from_dir: CoT-with-AST
+
+  - name: cot_with_cfg_pdg-gpt4.1
+    out_dir: CoT-with-CFG-PDG_gpt-4.1
+    prompts:
+      type: copy
+      # You can reference another variant name (resolved to its out_dir)
+      from_dir: CoT-with-CFG_PDG

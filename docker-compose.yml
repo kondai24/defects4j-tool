@@ -1,0 +1,18 @@
+services:
+  defects4j:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: defects4j-container
+    environment:
+      - TZ=America/Los_Angeles
+      - JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+    working_dir: /workspace
+    volumes:
+      - ./workspace:/workspace
+    ports:
+      - "8080:8080"
+    stdin_open: true
+    tty: true
+    mem_limit: 6g
+    memswap_limit: 6g

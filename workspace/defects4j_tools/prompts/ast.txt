@@ -1,0 +1,89 @@
+# Bug Fix Prompt
+
+Using the following information (Bug Title / Bug Description / provided code / AST info), reason about the failure, identify the root cause(s), and fix the bug.
+
+Important: The fix target is a **single file**. However, the root cause and the fix may span **multiple hunks within that same file**.
+
+## Inputs
+
+### Bug Title:
+{{ Bug Title }}
+
+### Bug Description:
+{{ Bug Description }}
+
+### AST:
+```lisp
+{{ AST }}
+```
+
+## Constraints
+
+- Prefer to preserve the existing spec/public API if possible. However, allow small behavior adjustments when necessary for **correctness, consistency, and passing tests**.
+- Avoid unnatural “test-silencing hacks” (e.g., always returning a constant, bypassing logic with unrelated conditions, unconditionally swallowing exceptions, adding sleep/retry without evidence).
+- The fix does not need to be minimal. If consistency requires it, you may change **multiple hunks within the single file**.
+- Use AST information to:
+  - localize the true producer of the failing output,
+  - trace dependencies within the same file (callers/callees, field reads/writes, overridden/overloading, control-flow structure),
+  - and validate that edits remain syntactically and structurally consistent.
+
+## Required Reasoning Steps
+
+1) Summarize the symptom and list multiple plausible defect types
+    (e.g., wrong branching, precedence/order, boundary conditions, state update, parsing/formatting, comparison logic, etc.).
+    - Also mention what part of the output mismatches (format/value/order) and what that suggests.
+
+2) List multiple code locations (hunks) in the same file that could plausibly contribute to the bug.
+    - Format: line/method/block name + role
+    - Include at least:
+      (a) the area directly producing the failing output
+      (b) the area that sets up its preconditions
+    - Use the AST to reference locations precisely:
+      - node type (e.g., MethodDeclaration / IfStatement / BinaryExpr / CallExpr)
+      - identifier (method/field name)
+      - and position info if available (line/column/span)
+
+3) For each candidate, briefly explain why it could lead to the failure.
+    - Where the gap between expected vs actual is introduced
+    - Consider inputs, branches, ordering, state, and formatting
+    - Use the AST to support your reasoning:
+      - show which condition/call/assignment node drives the behavior
+      - mention the key AST path (e.g., method A → call B → modifies field C → affects formatter D)
+
+4) Design the fix (must stay within the single file).
+    - Fix the root cause(s)
+    - Adjust any necessary surrounding logic in the same file to keep internal consistency
+    - Use the AST to identify and cover direct dependencies:
+      - callers of the modified method(s)
+      - shared helper methods used across branches
+      - field mutations and all read sites that assume the old behavior
+      - overload/override relationships (if present in the file)
+    - If you conclude only one hunk needs changes, then modify only that hunk.
+
+5) Apply the fix.
+    - Modify all required hunks within this file.
+    - Keep code style consistent with the file.
+    - Do not add unrelated refactors.
+
+6) Two thought experiments (1 normal + 1 edge case)
+    - Explain how behavior changes from before to after, and why tests pass.
+    - Ground the explanation in the code + AST structure (which branch/call/assignment is now different).
+
+7) Syntax/Build Safety (MANDATORY)
+    - No syntax/compile errors
+    - References/returns/exceptions/state updates remain consistent
+    - No contradictions within the modified file
+    - Confirm AST-level consistency:
+      - edited nodes remain well-formed for the language
+      - parentheses/braces/scopes are balanced
+      - method signatures/types/import usage remain consistent
+      - control-flow is coherent (e.g., no unreachable code introduced without intent)
+
+## Output Format (STRICT)
+- **Always output headings exactly as “Step 1” through “Step 7”.**
+  - For each step, **briefly** describe the corresponding reasoning and result.
+- **Always clearly state the Root Cause.**
+  - Briefly write: **Expected behavior / Actual behavior / The direct cause (a specific point in the code)**.
+- **Always include a list of fixes (enumerated changes).**
+  - Format: `Change 1: <method/block name> - <what changed> - <reason>`
+  - If the fix spans multiple hunks, **separate them into multiple numbered changes**.

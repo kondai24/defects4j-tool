@@ -1,0 +1,113 @@
+# Bug Fix Prompt
+
+Using the following information (Bug Title / Bug Description / provided code / CFG & PDG info), reason about the failure, identify the root cause(s), and fix the bug.
+
+Important: The fix target is a **single file**. However, the root cause and the fix may span **multiple hunks within that same file**.
+
+## Inputs
+
+### Bug Title:
+{{ Bug Title }}
+
+### Bug Description:
+{{ Bug Description }}
+
+### CFG & PDG Format Legend:
+The CFG & PDG data provided below follows a custom line-based format:
+`[LineNo] TYPE Code // Tags`
+
+**Column Definitions:**
+- **`[LineNo]`**: The source code line number.
+- **`TYPE`**: The role of the node:
+    - **`DEF`**: Defines or updates a variable value.
+    - **`USE`**: Reads a variable value.
+    - **`CTRL`**: A branching point (if, while, etc.) that controls execution flow.
+    - **`CALL`**: Invokes a method.
+    - **`RETURN`**: Returns from the method.
+
+**Tags Definition:**
+- **`Flow: -> [NextNodes]`**: Represents **Control Flow**. Indicates the line(s) executed next.
+    - For `CTRL` nodes, branches are listed as `[TrueNode, FalseNode]`.
+    - Example: `Flow: -> [95(True), 98(False)]` means line 95 is taken if true, 98 if false.
+- **`USE var <- DEF at Lxx`**: Represents **Data Dependency**. The variable `var` used at this line is strictly derived from the definition at Line `Lxx`.
+- **`CtrlBy: [Lxx]`**: Represents **Control Dependence**. This line is only executed if the logical condition at Line `Lxx` allows it.
+- **`CALLS: method`**: Represents an inter-procedural call graph edge.
+
+**Note for Reasoning:**
+When tracing bugs, trust the `Flow` and `USE...<-...` tags to understand the actual execution path and data origins, rather than just reading the code snippets.
+
+### CFG & PDG:
+```text
+{{ CFG_PDG_DATA }}
+```
+
+## Constraints
+
+- Prefer to preserve the existing spec/public API if possible. However, allow small behavior adjustments when necessary for **correctness, consistency, and passing tests**.
+- Avoid unnatural “test-silencing hacks” (e.g., always returning a constant, bypassing logic with unrelated conditions, unconditionally swallowing exceptions, adding sleep/retry without evidence).
+- The fix does not need to be minimal. If consistency requires it, you may change **multiple hunks within the single file**.
+- Use CFG & PDG information to:
+    - localize the true producer of the failing output,
+    - trace dependencies within the same file (Flow, DEF/USE relationships, CtrlBy dependencies),
+    - and validate that edits remain logically and structurally consistent.
+
+## Required Reasoning Steps
+
+1) Summarize the symptom and list multiple plausible defect types
+     (e.g., wrong branching, precedence/order, boundary conditions, state update, parsing/formatting, comparison logic, etc.).
+     - Also mention what part of the output mismatches (format/value/order) and what that suggests.
+
+2) List multiple code locations (hunks) in the same file that could plausibly contribute to the bug.
+     - Format: line/method/block name + role
+     - Include at least:
+         (a) the area directly producing the failing output
+         (b) the area that sets up its preconditions
+     - Use the CFG & PDG to reference locations precisely:
+         - node information (e.g., Line number / Method / Control structure)
+         - flow and dependency tags (Flow, DEF, USE, CtrlBy)
+         - and context info if available
+
+3) For each candidate, briefly explain why it could lead to the failure.
+     - Where the gap between expected vs actual is introduced
+     - Consider inputs, branches, ordering, state, and formatting
+     - Use the CFG & PDG to support your reasoning:
+         - show which condition/call/assignment node drives the behavior (referencing `CtrlBy` or `Flow`)
+         - mention the key Flow/Dependency path (e.g., method A → Flow → modifies field B (DEF) → affects C (USE))
+
+4) Design the fix (must stay within the single file).
+     - Fix the root cause(s)
+     - Adjust any necessary surrounding logic in the same file to keep internal consistency
+     - Use the CFG & PDG to identify and cover direct dependencies:
+         - callers of the modified method(s) (traced via `Flow`)
+         - shared helper methods used across branches
+         - field mutations (DEF) and all read sites (USE) that assume the old behavior
+         - control dependencies (`CtrlBy`) that might be affected
+     - If you conclude only one hunk needs changes, then modify only that hunk.
+
+5) Apply the fix.
+     - Modify all required hunks within this file.
+     - Keep code style consistent with the file.
+     - Do not add unrelated refactors.
+
+6) Two thought experiments (1 normal + 1 edge case)
+     - Explain how behavior changes from before to after, and why tests pass.
+     - Ground the explanation in the code + CFG & PDG structure (which branch/Flow/DEF-USE chain is now different).
+
+7) Syntax/Build Safety (MANDATORY)
+     - No syntax/compile errors
+     - References/returns/exceptions/state updates remain consistent
+     - No contradictions within the modified file
+     - Confirm CFG & PDG consistency:
+         - edited nodes remain well-formed for the logic
+         - variable definitions (DEF) properly reach their uses (USE)
+         - method signatures/types remain consistent
+         - control-flow is coherent (e.g., no unreachable code introduced without intent)
+
+## Output Format (STRICT)
+- **Always output headings exactly as “Step 1” through “Step 7”.**
+  - For each step, **briefly** describe the corresponding reasoning and result.
+- **Always clearly state the Root Cause.**
+  - Briefly write: **Expected behavior / Actual behavior / The direct cause (a specific point in the code)**.
+- **Always include a list of fixes (enumerated changes).**
+  - Format: `Change 1: <method/block name> - <what changed> - <reason>`
+  - If the fix spans multiple hunks, **separate them into multiple numbered changes**.
