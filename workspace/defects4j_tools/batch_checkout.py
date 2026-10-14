@@ -122,7 +122,7 @@ def run(target_dir: str, csv_file: str) -> int:
         print(f"\n[{i}/{len(projects)}] Processing {project_name}-{bug_id}")
 
         bug_version = f"{bug_id}b"
-        checkout_dir = f"./{target_dir}/{project_name}-{bug_id}"
+        checkout_dir = os.path.join(target_dir, f"{project_name}-{bug_id}")
 
         # ディレクトリが既に存在する場合は、exportのみ実行してlocationを取得
         if os.path.isdir(checkout_dir):
