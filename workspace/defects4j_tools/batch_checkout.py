@@ -86,22 +86,19 @@ def run(target_dir: str, csv_file: str) -> int:
 
     # 既存results.csvがあれば読み込み（test結果を保持したいので）
     existing_results: dict[tuple[str, str], dict[str, str]] = {}
+    existing_fieldnames: list[str] = []
     if os.path.exists(output_results_csv):
         try:
             with open(output_results_csv, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
+                existing_fieldnames = list(reader.fieldnames or [])
                 for row in reader:
                     project = (row.get('project') or '').strip()
                     bug_id = (row.get('id') or '').strip()
                     if not project or not bug_id:
                         continue
-                    existing_results[(project, bug_id)] = {
-                        'project': project,
-                        'id': bug_id,
-                        'test_status': (row.get('test_status') or '').strip(),
-                        'error_count': (row.get('error_count') or '').strip(),
-                        'failing_tests': row.get('failing_tests') or '',
-                    }
+                    # 計測時間など、他のステップが追加した列も保持する
+                    existing_results[(project, bug_id)] = {k: (v or '') for k, v in row.items() if k}
         except Exception as exc:
             print(f"[warn] Failed to read existing results.csv: {exc}", file=sys.stderr)
 
@@ -241,25 +238,21 @@ def run(target_dir: str, csv_file: str) -> int:
             failed_count += 1
             failed_projects.append(f"{project_name}-{bug_id} (checkout)")
 
-    # results.csvを生成/更新（project,id,test_status,error_count,failing_tests）
+    # results.csvを生成/更新（project,id,test_status,error_count,failing_tests + 既存の追加列）
     print("\n" + "-" * 60)
     print("Generating results.csv...")
 
     results_fieldnames = ['project', 'id', 'test_status', 'error_count', 'failing_tests']
+    results_fieldnames += [c for c in existing_fieldnames if c not in results_fieldnames]
     out_rows: list[dict[str, str]] = []
     for project_data in projects:
         project = project_data['project']
         bug_id = project_data['id']
         existing = existing_results.get((project, bug_id), {})
-        out_rows.append(
-            {
-                'project': project,
-                'id': bug_id,
-                'test_status': existing.get('test_status', ''),
-                'error_count': existing.get('error_count', ''),
-                'failing_tests': existing.get('failing_tests', ''),
-            }
-        )
+        out_row = {col: existing.get(col, '') for col in results_fieldnames}
+        out_row['project'] = project
+        out_row['id'] = bug_id
+        out_rows.append(out_row)
 
     with open(output_results_csv, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=results_fieldnames)

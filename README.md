@@ -65,6 +65,20 @@ python pipeline.py test --dir Normal
 - 各対象 Java ファイルの隣に `*_prompt.md`
 - `Normal/fix_results.txt`
 - `python pipeline.py test` 実行後、`Normal/results.csv` の `test_status` / `error_count` / `failing_tests` が更新
+- `prompts` / `fix` 実行後、`Normal/results.csv` にバグごとの所要時間（秒）が記録される（下記）
+
+### results.csv の所要時間カラム
+
+| カラム | 内容 |
+| --- | --- |
+| `prompt_time_sec` | prompt 1 件の生成時間。バグ情報（`defects4j info` / JIRA）の取得から `*_prompt.md` の書き出しまで。修正対象ファイルの特定（`defects4j export`）は含まない |
+| `fix_time_sec` | Copilot セッション 1 回の時間（起動〜応答〜終了）。タイムアウト・エラー時も記録 |
+| `prompt_fix_time_sec` | `prompt_time_sec + fix_time_sec`（両方ある場合のみ） |
+
+- 各ステップの開始時に該当カラムを空にし、1 件終わるごとに書き込みます（途中で止めても完了分は残ります）。
+- prompt の生成に失敗・スキップした行は空欄になります。
+- `prompts_copy`（plan の `prompts.type: copy`）では、コピー時間ではなくコピー元 `results.csv` の `prompt_time_sec` を引き継ぎます。
+- 同じ JIRA URL を持つバグが複数ある場合、2 件目以降は取得結果をキャッシュから使うため短くなります。
 
 ## 一括実行（plan モード: run --plan）
 

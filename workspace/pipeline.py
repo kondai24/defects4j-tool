@@ -17,13 +17,12 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TextIO
 
-from defects4j_tools import batch_checkout, batch_fix, batch_single_fix, batch_test, generate_prompts, prompts_copy
+from defects4j_tools import batch_checkout, batch_fix, batch_test, generate_prompts, prompts_copy
 
 
 DEFAULT_STEPS = ["checkout", "prompts", "fix", "test"]
 VALID_STEPS = {"checkout", "prompts", "test", "fix"}
 VALID_PROMPTS_TYPE = {"generate", "copy"}
-VALID_FIX_MODE = {"fix", "single_fix"}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -51,18 +50,6 @@ def build_parser() -> argparse.ArgumentParser:
     p_fix = sub.add_parser("fix", help="Run Copilot-based fix using <target_dir>/results.csv")
     p_fix.add_argument("--dir", dest="target_dir", required=True, help="Target directory (contains results.csv)")
     p_fix.add_argument(
-        "--model",
-        dest="model",
-        default="gpt-5-mini",
-        help="LLM model name used by Copilot (default: gpt-5-mini)",
-    )
-
-    p_single_fix = sub.add_parser(
-        "single_fix",
-        help="Run Copilot-based fix (fix_work workdir mode) using <target_dir>/results.csv",
-    )
-    p_single_fix.add_argument("--dir", dest="target_dir", required=True, help="Target directory (contains results.csv)")
-    p_single_fix.add_argument(
         "--model",
         dest="model",
         default="gpt-5-mini",
@@ -169,9 +156,6 @@ def _run_variant(
     steps = _normalize_steps(variant.get("steps", defaults.get("steps")), f"variants[{name}].steps")
     model = str(variant.get("model") or defaults.get("model") or "gpt-5-mini")
     continue_on_error = bool(variant.get("continue_on_error", defaults.get("continue_on_error", True)))
-    fix_mode = str(variant.get("fix_mode") or defaults.get("fix_mode") or "fix")
-    if fix_mode not in VALID_FIX_MODE:
-        raise ValueError(f"variants[{name}].fix_mode must be one of {sorted(VALID_FIX_MODE)}")
 
     prompts_cfg = variant.get("prompts", defaults.get("prompts", {"type": "generate", "mode": "normal"}))
     prompts_cfg = _require_dict(prompts_cfg, f"variants[{name}].prompts")
@@ -206,7 +190,6 @@ def _run_variant(
             print(f"  out_dir: {out_dir_raw}")
             print(f"  steps: {steps}")
             print(f"  prompts: {prompts_type}" + (f" (mode={prompts_mode})" if prompts_type == "generate" else ""))
-            print(f"  fix_mode: {fix_mode}")
             print(f"  model: {model}")
             print("=" * 60)
 
@@ -229,10 +212,7 @@ def _run_variant(
                             return 0
                         rc = prompts_copy.run(from_dir_abs, out_dir)
                 elif step == "fix":
-                    if fix_mode == "fix":
-                        rc = batch_fix.run(out_dir, model=model)
-                    else:
-                        rc = batch_single_fix.run(out_dir, model=model)
+                    rc = batch_fix.run(out_dir, model=model)
                 elif step == "test":
                     rc = batch_test.run(out_dir)
                 else:
@@ -327,9 +307,6 @@ def main() -> int:
 
     if args.command == "fix":
         return batch_fix.run(args.target_dir, model=args.model)
-
-    if args.command == "single_fix":
-        return batch_single_fix.run(args.target_dir, model=args.model)
 
     if args.command == "run":
         return run_plan(args.plan_path, args.only)

@@ -12,6 +12,8 @@ Rules:
 - Copies "{ClassName}_prompt.md" next to the destination Java file.
 - If the destination prompt already exists, prints its path and skips.
 - If source checkout or prompt is missing, prints a message and skips.
+- For copied prompts, prompt_time_sec in <from_dir>/results.csv (the generation time)
+  is carried over to <to_dir>/results.csv, so copy time is never recorded as prompt time.
 - Continues processing all rows; only fatal setup errors cause non-zero exit.
 """
 
@@ -25,6 +27,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 from . import bug_locator
+from . import timing
 
 
 def resolve_dir_path(value: str) -> Path:
@@ -86,6 +89,8 @@ def run(from_dir: str, to_dir: str) -> int:
     except Exception as exc:
         print(f"Error: failed to read {results_csv}: {exc}", file=sys.stderr)
         return 2
+
+    src_prompt_times = timing.read_column(base_from / "results.csv", timing.PROMPT_TIME_COL)
 
     copied: List[str] = []
     skipped_existing: List[str] = []
@@ -167,6 +172,10 @@ def run(from_dir: str, to_dir: str) -> int:
         except Exception as exc:
             print(f"[warn] {prefix}: copy failed: {exc}")
             copy_failed.append(key)
+            continue
+
+        src_time = src_prompt_times.get((project, bug_id), "")
+        timing.record_time(results_csv, project, bug_id, timing.PROMPT_TIME_COL, float(src_time) if src_time else None)
 
     print("=" * 60)
     print("SUMMARY prompts_copy")

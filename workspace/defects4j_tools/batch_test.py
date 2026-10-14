@@ -95,13 +95,11 @@ def run(target_dir: str) -> int:
             fieldnames.append('failing_tests')
 
         for row in reader:
-            projects.append({
-                'project': row['project'],
-                'id': row['id'],
-                'test_status': row.get('test_status', ''),
-                'error_count': row.get('error_count', ''),
-                'failing_tests': row.get('failing_tests', '')
-            })
+            # 計測時間など、他のステップが追加した列も保持する
+            project_data = {k: v for k, v in row.items() if k is not None}
+            for col in ('test_status', 'error_count', 'failing_tests'):
+                project_data.setdefault(col, '')
+            projects.append(project_data)
 
     print(f"Found {len(projects)} projects to test")
     print(f"Target directory: {target_dir}")
