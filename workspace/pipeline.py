@@ -6,7 +6,7 @@ Subcommands:
 - prompts: generate prompts next to bug Java files using <target_dir>/results.csv
 - prompts_copy: copy prompts from one dir to another based on <to_dir>/results.csv
 - test: run defects4j test for rows in <target_dir>/results.csv and update it
-- fix: run Copilot-based fix for rows in <target_dir>/results.csv (requires prompts next to bug files)
+- fix: run LLM-based fix (FIX_PROVIDER=claude|codex) for rows in <target_dir>/results.csv (requires prompts next to bug files)
 - run: run a multi-variant workflow (checkout/prompts/fix/test) from a YAML plan file
 """
 
@@ -47,13 +47,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_test = sub.add_parser("test", help="Run tests using <target_dir>/results.csv and update it")
     p_test.add_argument("--dir", dest="target_dir", required=True, help="Target directory (contains results.csv)")
 
-    p_fix = sub.add_parser("fix", help="Run Copilot-based fix using <target_dir>/results.csv")
+    p_fix = sub.add_parser("fix", help="Run LLM-based fix (FIX_PROVIDER=claude|codex) using <target_dir>/results.csv")
     p_fix.add_argument("--dir", dest="target_dir", required=True, help="Target directory (contains results.csv)")
     p_fix.add_argument(
         "--model",
         dest="model",
-        default="gpt-5-mini",
-        help="LLM model name used by Copilot (default: gpt-5-mini)",
+        default=None,
+        help="Model name for the provider selected by FIX_PROVIDER (required)",
     )
 
     p_run = sub.add_parser("run", help="Run checkout/prompts/fix/test for multiple variants from a YAML plan")
@@ -132,6 +132,11 @@ def _normalize_steps(value: Any, where: str) -> List[str]:
     return value
 
 
+def _variant_model(defaults: Dict[str, Any], variant: Dict[str, Any]) -> Optional[str]:
+    model = str(variant.get("model") or defaults.get("model") or "").strip()
+    return model or None
+
+
 def _run_variant(
     *,
     plan_base_dir: Path,
@@ -154,7 +159,7 @@ def _run_variant(
         raise ValueError(f"variant '{name}' is missing in_csv (and plan root has no in_csv)")
 
     steps = _normalize_steps(variant.get("steps", defaults.get("steps")), f"variants[{name}].steps")
-    model = str(variant.get("model") or defaults.get("model") or "gpt-5-mini")
+    model = _variant_model(defaults, variant)
     continue_on_error = bool(variant.get("continue_on_error", defaults.get("continue_on_error", True)))
 
     prompts_cfg = variant.get("prompts", defaults.get("prompts", {"type": "generate", "mode": "normal"}))
@@ -190,7 +195,8 @@ def _run_variant(
             print(f"  out_dir: {out_dir_raw}")
             print(f"  steps: {steps}")
             print(f"  prompts: {prompts_type}" + (f" (mode={prompts_mode})" if prompts_type == "generate" else ""))
-            print(f"  model: {model}")
+            print(f"  provider: {batch_fix.get_provider() or '-'}")
+            print(f"  model: {model or '-'}")
             print("=" * 60)
 
             for step in steps:
@@ -268,11 +274,25 @@ def run_plan(plan_path: str, only: Optional[str]) -> int:
         if vname and out_dir:
             name_to_outdir[vname] = out_dir
 
-    overall_rc = 0
-    for vd in normalized_variants:
-        name = str(vd.get("name") or vd.get("out_dir") or "").strip()
-        if wanted is not None and name not in wanted:
+    selected = [
+        vd
+        for vd in normalized_variants
+        if wanted is None or str(vd.get("name") or vd.get("out_dir") or "").strip() in wanted
+    ]
+
+    # fix を含む variant があれば、checkout などを始める前に provider / model を検証する
+    for vd in selected:
+        steps = _normalize_steps(vd.get("steps", defaults.get("steps")), "steps")
+        if "fix" not in steps:
             continue
+        error = batch_fix.validate_config(_variant_model(defaults, vd))
+        if error:
+            name = str(vd.get("name") or vd.get("out_dir") or "").strip()
+            print(f"Error: variant '{name}': {error}", file=sys.stderr)
+            return 2
+
+    overall_rc = 0
+    for vd in selected:
         rc = _run_variant(
             plan_base_dir=plan_base_dir,
             run_base_dir=run_base_dir,

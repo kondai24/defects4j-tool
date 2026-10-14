@@ -2,7 +2,7 @@
 
 Columns:
 - prompt_time_sec: time to build one prompt (step 2)
-- fix_time_sec: time of one Copilot fix session (step 3)
+- fix_time_sec: time of one fix session (Claude / Codex, step 3)
 - prompt_fix_time_sec: prompt_time_sec + fix_time_sec (empty unless both are set)
 """
 

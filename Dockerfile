@@ -41,17 +41,17 @@ RUN pip install --no-cache-dir -U pip
 # Python libraries
 # networkx/pydot/pyparsing: CFG_PDGモードの .dot 読み取り (networkx.nx_pydot.read_dot) に必要
 # tree-sitter-languages: ASTモードのS式AST生成に必要
-# github-copilot-sdk: GitHub Copilot SDK (Python)
+# claude-agent-sdk: Claude Agent SDK (fix, FIX_PROVIDER=claude。Claude Code CLI を同梱)
+# openai-codex: OpenAI Codex SDK (fix, FIX_PROVIDER=codex。Codex CLI を同梱)
 RUN pip install --no-cache-dir \
     networkx \
     "pydot==1.4.2" \
     "pyparsing<3" \
     "tree-sitter==0.21.3" \
     "tree-sitter-languages==1.10.2" \
-    "github-copilot-sdk==0.1.18" \
+    "claude-agent-sdk==0.2.166" \
+    "openai-codex==0.162.1" \
     pyyaml
-
-RUN curl -fsSL https://gh.io/copilot-install | bash
 
 # Java version
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64

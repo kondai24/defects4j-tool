@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Run Copilot-based fixes for checked-out Defects4J bugs.
+"""Run LLM-based fixes (Claude / Codex) for checked-out Defects4J bugs.
 
 Input: <target_dir>/results.csv (project,id,...)
 Behavior:
+- The provider is selected by the environment variable FIX_PROVIDER (claude | codex).
 - For each row, resolve the modified class via `defects4j export -p classes.modified`.
 - Find the corresponding .java file (same algorithm as prompt generation).
 - Look for a prompt file next to it: `{ClassName}_prompt.md`.
 - If prompt is missing, log and skip.
-- Otherwise, run Copilot (gpt-5-mini, streaming disabled) to edit the Java file.
+- Otherwise, run the provider with cwd = the Java file's directory to edit the Java file.
 - Verify whether the file changed via SHA-256 hash comparison and log the result.
+- Codex only: save the executed items to <target_dir>/codex_logs/ and warn about accesses outside cwd.
 """
 
 from __future__ import annotations
@@ -16,53 +18,44 @@ from __future__ import annotations
 import asyncio
 import csv
 import hashlib
+import os
 import sys
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, TextIO
 
 from . import bug_locator
+from . import fix_claude
+from . import fix_codex
 from . import timing
 
-try:
-    from copilot import CopilotClient
-    from copilot.generated.session_events import SessionEventType
-except Exception:  # pragma: no cover
-    CopilotClient = None  # type: ignore[assignment]
-    SessionEventType = None  # type: ignore[assignment]
+
+PROVIDER_ENV = "FIX_PROVIDER"
+PROVIDERS = {
+    "claude": {"module": fix_claude, "api_key_env": "ANTHROPIC_API_KEY", "package": "claude-agent-sdk"},
+    "codex": {"module": fix_codex, "api_key_env": "OPENAI_API_KEY", "package": "openai-codex"},
+}
 
 
-# 出力はバッチ実行ログとして必要最小限にする
-DEBUG_EVENT_DUMP = False
-DEBUG_DELTA_STDOUT = False
+def get_provider() -> str:
+    return (os.environ.get(PROVIDER_ENV) or "").strip()
 
 
-IMPORTANT = set()
-NOISY = set()
-if SessionEventType is not None:
-    IMPORTANT = {
-        SessionEventType.ASSISTANT_MESSAGE_DELTA,
-        SessionEventType.ASSISTANT_MESSAGE,
-        SessionEventType.TOOL_EXECUTION_START,
-        SessionEventType.TOOL_EXECUTION_COMPLETE,
-        SessionEventType.SESSION_IDLE,
-        SessionEventType.ASSISTANT_TURN_START,
-        SessionEventType.ASSISTANT_TURN_END,
-    }
-
-    NOISY = {
-        SessionEventType.SESSION_USAGE_INFO,
-        SessionEventType.ASSISTANT_USAGE,
-        SessionEventType.PENDING_MESSAGES_MODIFIED,
-    }
-
-
-def _safe_repr(obj, limit: int = 2000) -> str:
-    try:
-        s = repr(obj)
-    except Exception:
-        s = f"<unreprable {type(obj)}>"
-    return s if len(s) <= limit else s[:limit] + "...(truncated)"
+def validate_config(model: Optional[str]) -> Optional[str]:
+    """fix を始める前に provider / model / API キーを検証し、問題があればエラーメッセージを返す。"""
+    provider = get_provider()
+    if not provider:
+        return f"環境変数 {PROVIDER_ENV} を指定してください（{' | '.join(PROVIDERS)}）。"
+    if provider not in PROVIDERS:
+        return f"{PROVIDER_ENV}={provider} は不正です。{' | '.join(PROVIDERS)} のいずれかを指定してください。"
+    if not (model or "").strip():
+        return "モデルを指定してください（fix は --model、plan モードは model）。"
+    spec = PROVIDERS[provider]
+    if not spec["module"].is_available():
+        return f"Python package '{spec['package']}' が見つかりません。"
+    if not (os.environ.get(spec["api_key_env"]) or "").strip():
+        return f"環境変数 {spec['api_key_env']} を指定してください（{PROVIDER_ENV}={provider}）。"
+    return None
 
 
 def sha256_text(s: str) -> str:
@@ -89,53 +82,32 @@ def load_results_rows(results_csv: Path) -> List[Dict[str, str]]:
         return list(reader)
 
 
-async def _run_one_session(
-    *,
-    bug_cwd: Path,
-    prompt_md: str,
-    attachment_path: str,
-    model: str,
-    handle_event,
-) -> Optional[str]:
-    # Copilot SDK の client オプション `cwd` を使い、ツール実行時のパス解決を安定させる。
-    client = CopilotClient({"cwd": str(bug_cwd)})
-    await client.start()
-    try:
-        config = {
-            "model": model,
-            "streaming": False,
-        }
-
-        session = await client.create_session(config)
-        session.on(handle_event)
-
-        response = await session.send_and_wait(
-            {
-                "prompt": prompt_md,
-                "attachments": [
-                    {"type": "file", "path": attachment_path},
-                ],
-            },
-            timeout=1800,
-        )
-        if response:
-            return response.data.content
-        return None
-    finally:
-        await client.stop()
-
-
-def _write_fix_result(fh: TextIO, project: str, bug_id: str, content: str) -> None:
-    fh.write(f"{project}_{bug_id}のcopilotの返答\n")
+def _write_fix_result(
+    fh: TextIO, provider: str, project: str, bug_id: str, content: str, outside_accesses: Optional[List[str]] = None
+) -> None:
+    fh.write(f"{project}_{bug_id}の{provider}の返答\n")
     fh.write(content)
     if not content.endswith("\n"):
         fh.write("\n")
+    if outside_accesses:
+        fh.write("[警告] cwd 外へのアクセスを検出しました:\n")
+        for entry in outside_accesses:
+            fh.write(f"  - {entry}\n")
     fh.write("\n")
+
+
+async def _run_provider(provider: str, *, bug_cwd: Path, prompt_md: str, target_file: str, model: str, log_path: Path):
+    if provider == "codex":
+        return await fix_codex.run_fix(
+            bug_cwd=bug_cwd, prompt_md=prompt_md, target_file=target_file, model=model, log_path=log_path
+        )
+    return await fix_claude.run_fix(bug_cwd=bug_cwd, prompt_md=prompt_md, target_file=target_file, model=model)
 
 
 async def _run_fix_for_one(
     idx: int,
     total: int,
+    provider: str,
     project: str,
     bug_id: str,
     java_file: Path,
@@ -143,6 +115,7 @@ async def _run_fix_for_one(
     model: str,
     results_fh: TextIO,
     results_csv: Path,
+    counters: Dict[str, int],
 ) -> str:
     label = f"{project}-{bug_id}"
     print(f"[{idx}/{total}] fixing {label}")
@@ -150,51 +123,45 @@ async def _run_fix_for_one(
     if not prompt_file.exists():
         print(f"promptファイルが存在しません: {prompt_file.name}")
         print("promptが存在しないため、fixを実施しませんでした")
-        _write_fix_result(results_fh, project, bug_id, "promptファイルが存在しません")
+        _write_fix_result(results_fh, provider, project, bug_id, "promptファイルが存在しません")
         return "skipped_no_prompt"
 
     bug_cwd = java_file.parent
     prompt_md = prompt_file.read_text(encoding="utf-8", errors="replace")
     original_bug = java_file.read_text(encoding="utf-8", errors="replace")
     original_hash = sha256_text(original_bug)
-
-    # 何が起きているか可視化するイベントハンドラ
-    def handle_event(event):
-        # 通常実行ではイベントログは出さない
-        return
+    log_path = results_csv.parent / "codex_logs" / f"{project}_{bug_id}.jsonl"
 
     start = time.perf_counter()
     try:
-        # 添付は、CopilotClient の cwd からの相対パスにする。
-        # （通常は java_file は bug_cwd 配下のため relative_to が成功する）
-        try:
-            attachment_path = str(java_file.relative_to(bug_cwd))
-        except ValueError:
-            attachment_path = java_file.name
-
-        content = await _run_one_session(
+        response = await _run_provider(
+            provider,
             bug_cwd=bug_cwd,
             prompt_md=prompt_md,
-            attachment_path=attachment_path,
+            target_file=java_file.name,
             model=model,
-            handle_event=handle_event,
+            log_path=log_path,
         )
     except (asyncio.TimeoutError, TimeoutError):
         print("タイムアウトのため、fixを実施できませんでした")
-        _write_fix_result(results_fh, project, bug_id, "タイムアウトが発生しました")
+        _write_fix_result(results_fh, provider, project, bug_id, "タイムアウトが発生しました")
         return "timeout"
     except Exception as exc:
         print(f"エラーのため、fixを実施できませんでした: {exc}")
-        _write_fix_result(results_fh, project, bug_id, f"エラーが発生しました: {type(exc).__name__}: {exc}")
+        _write_fix_result(
+            results_fh, provider, project, bug_id, f"エラーが発生しました: {type(exc).__name__}: {exc}"
+        )
         return "error"
     finally:
-        # タイムアウト・エラー時も、Copilot セッションにかかった時間を記録する
+        # タイムアウト・エラー時も、fix セッションにかかった時間を記録する
         elapsed = time.perf_counter() - start
         timing.record_time(results_csv, project, bug_id, timing.FIX_TIME_COL, elapsed)
 
-    if content is None:
-        content = "responseがNoneでした"
-    _write_fix_result(results_fh, project, bug_id, content)
+    content = response.content if response.content is not None else "responseがNoneでした"
+    _write_fix_result(results_fh, provider, project, bug_id, content, response.outside_accesses)
+    if response.outside_accesses:
+        counters["outside_access"] += 1
+        print(f"[警告] cwd 外へのアクセスを検出しました（{len(response.outside_accesses)} 件、詳細は fix_results.txt）")
 
     updated_bug = java_file.read_text(encoding="utf-8", errors="replace")
     updated_hash = sha256_text(updated_bug)
@@ -207,18 +174,16 @@ async def _run_fix_for_one(
     return "updated"
 
 
-async def _run_all(base_dir: Path, results_csv: Path, rows: List[Dict[str, str]], *, model: str) -> int:
-    if CopilotClient is None:
-        print("Error: Python package 'copilot' が見つかりません。", file=sys.stderr)
-        print("まず 'copilot' クライアントが利用できる環境で実行してください。", file=sys.stderr)
-        return 1
-
+async def _run_all(
+    base_dir: Path, results_csv: Path, rows: List[Dict[str, str]], *, provider: str, model: str
+) -> int:
     total = sum(1 for r in rows if (r.get("project") or "").strip() and (r.get("id") or "").strip())
     if total == 0:
         print("No valid rows found in results.csv", file=sys.stderr)
         return 1
 
     timing.clear_column(results_csv, timing.FIX_TIME_COL)
+    print(f"provider: {provider} / model: {model}")
 
     counters: Dict[str, int] = {
         "updated": 0,
@@ -229,6 +194,7 @@ async def _run_all(base_dir: Path, results_csv: Path, rows: List[Dict[str, str]]
         "skipped_no_bug_dir": 0,
         "skipped_no_location": 0,
         "skipped_no_java": 0,
+        "outside_access": 0,
     }
 
     results_path = base_dir / "fix_results.txt"
@@ -247,7 +213,7 @@ async def _run_all(base_dir: Path, results_csv: Path, rows: List[Dict[str, str]]
             if not bug_dir:
                 print(f"[{current}/{total}] fixing {label}")
                 print("bugディレクトリが見つからないため、fixを実施しませんでした")
-                _write_fix_result(results_fh, project, bug_id, "bugディレクトリが見つからないため、fixを実施しませんでした")
+                _write_fix_result(results_fh, provider, project, bug_id, "bugディレクトリが見つからないため、fixを実施しませんでした")
                 counters["skipped_no_bug_dir"] += 1
                 print()
                 continue
@@ -256,7 +222,7 @@ async def _run_all(base_dir: Path, results_csv: Path, rows: List[Dict[str, str]]
             if not bug_location:
                 print(f"[{current}/{total}] fixing {label}")
                 print("defects4j export に失敗したため、fixを実施しませんでした")
-                _write_fix_result(results_fh, project, bug_id, "defects4j export に失敗したため、fixを実施しませんでした")
+                _write_fix_result(results_fh, provider, project, bug_id, "defects4j export に失敗したため、fixを実施しませんでした")
                 counters["skipped_no_location"] += 1
                 print()
                 continue
@@ -265,14 +231,24 @@ async def _run_all(base_dir: Path, results_csv: Path, rows: List[Dict[str, str]]
             if java_file is None:
                 print(f"[{current}/{total}] fixing {label}")
                 print("バグファイル(.java)が特定できないため、fixを実施しませんでした")
-                _write_fix_result(results_fh, project, bug_id, "バグファイル(.java)が特定できないため、fixを実施しませんでした")
+                _write_fix_result(results_fh, provider, project, bug_id, "バグファイル(.java)が特定できないため、fixを実施しませんでした")
                 counters["skipped_no_java"] += 1
                 print()
                 continue
 
             prompt_file = java_file.parent / f"{java_file.stem}_prompt.md"
             status = await _run_fix_for_one(
-                current, total, project, bug_id, java_file, prompt_file, model, results_fh, results_csv
+                current,
+                total,
+                provider,
+                project,
+                bug_id,
+                java_file,
+                prompt_file,
+                model,
+                results_fh,
+                results_csv,
+                counters,
             )
             counters[status] = counters.get(status, 0) + 1
             print()
@@ -289,12 +265,19 @@ async def _run_all(base_dir: Path, results_csv: Path, rows: List[Dict[str, str]]
     print(f"Skipped (no java): {counters['skipped_no_java']}")
     print(f"Timeout: {counters['timeout']}")
     print(f"Error: {counters['error']}")
+    if provider == "codex":
+        print(f"Outside cwd access (warning): {counters['outside_access']}")
 
     return 0
 
 
-def run(target_dir: str, *, model: str = "gpt-5-mini") -> int:
+def run(target_dir: str, *, model: Optional[str]) -> int:
     """Run fix for all rows in <target_dir>/results.csv."""
+
+    error = validate_config(model)
+    if error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 1
 
     base_dir = resolve_dir_path(target_dir)
     results_csv = base_dir / "results.csv"
@@ -309,7 +292,7 @@ def run(target_dir: str, *, model: str = "gpt-5-mini") -> int:
         return 1
 
     try:
-        return asyncio.run(_run_all(base_dir, results_csv, rows, model=model))
+        return asyncio.run(_run_all(base_dir, results_csv, rows, provider=get_provider(), model=model))
     except KeyboardInterrupt:
         print("Interrupted", file=sys.stderr)
         return 130
