@@ -14,6 +14,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -24,6 +25,7 @@ from . import info
 from . import bug_locator
 from . import cpg_compressor as compressor
 from . import java_to_ast_sexp
+from . import timing
 
 APACHE_PREFIX = "https://issues.apache.org"
 DEFAULT_BASE_DIR = "CoT-no-AST"
@@ -419,6 +421,7 @@ def main() -> None:
         sys.exit(f"Error: results.csv not found: {results_csv}")
 
     rows = load_results_rows(results_csv)
+    timing.clear_column(results_csv, timing.PROMPT_TIME_COL)
 
     jira_cache: Dict[str, Tuple[str, str]] = {}
 
@@ -452,6 +455,8 @@ def main() -> None:
             skipped_no_code += 1
             continue
 
+        # Measured from here: bug-location lookup above is dataset bookkeeping.
+        started = time.perf_counter()
         info_output = info.run_defects4j(project, bug_id)
         url = (info.extract_bug_url(info_output) or "").strip()
         if not url or url == "UNKNOWN":
@@ -502,6 +507,8 @@ def main() -> None:
                 raise ValueError(f"Unknown mode: {args.mode}")
 
             if write_prompt_to_file(java_file, prompt):
+                elapsed = time.perf_counter() - started
+                timing.record_time(results_csv, project, bug_id, timing.PROMPT_TIME_COL, elapsed)
                 generated += 1
                 print(f"[info] Generated prompt: {project}-{bug_id}", file=sys.stderr)
         finally:

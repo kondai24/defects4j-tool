@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, TextIO
 
 from . import bug_locator
+from . import timing
 
 try:
     from copilot import CopilotClient
@@ -141,6 +142,7 @@ async def _run_fix_for_one(
     prompt_file: Path,
     model: str,
     results_fh: TextIO,
+    results_csv: Path,
 ) -> str:
     label = f"{project}-{bug_id}"
     print(f"[{idx}/{total}] fixing {label}")
@@ -161,7 +163,7 @@ async def _run_fix_for_one(
         # 通常実行ではイベントログは出さない
         return
 
-    start = time.time()
+    start = time.perf_counter()
     try:
         # 添付は、CopilotClient の cwd からの相対パスにする。
         # （通常は java_file は bug_cwd 配下のため relative_to が成功する）
@@ -185,7 +187,10 @@ async def _run_fix_for_one(
         print(f"エラーのため、fixを実施できませんでした: {exc}")
         _write_fix_result(results_fh, project, bug_id, f"エラーが発生しました: {type(exc).__name__}: {exc}")
         return "error"
-    elapsed = time.time() - start
+    finally:
+        # タイムアウト・エラー時も、Copilot セッションにかかった時間を記録する
+        elapsed = time.perf_counter() - start
+        timing.record_time(results_csv, project, bug_id, timing.FIX_TIME_COL, elapsed)
 
     if content is None:
         content = "responseがNoneでした"
@@ -202,7 +207,7 @@ async def _run_fix_for_one(
     return "updated"
 
 
-async def _run_all(base_dir: Path, rows: List[Dict[str, str]], *, model: str) -> int:
+async def _run_all(base_dir: Path, results_csv: Path, rows: List[Dict[str, str]], *, model: str) -> int:
     if CopilotClient is None:
         print("Error: Python package 'copilot' が見つかりません。", file=sys.stderr)
         print("まず 'copilot' クライアントが利用できる環境で実行してください。", file=sys.stderr)
@@ -212,6 +217,8 @@ async def _run_all(base_dir: Path, rows: List[Dict[str, str]], *, model: str) ->
     if total == 0:
         print("No valid rows found in results.csv", file=sys.stderr)
         return 1
+
+    timing.clear_column(results_csv, timing.FIX_TIME_COL)
 
     counters: Dict[str, int] = {
         "updated": 0,
@@ -264,7 +271,9 @@ async def _run_all(base_dir: Path, rows: List[Dict[str, str]], *, model: str) ->
                 continue
 
             prompt_file = java_file.parent / f"{java_file.stem}_prompt.md"
-            status = await _run_fix_for_one(current, total, project, bug_id, java_file, prompt_file, model, results_fh)
+            status = await _run_fix_for_one(
+                current, total, project, bug_id, java_file, prompt_file, model, results_fh, results_csv
+            )
             counters[status] = counters.get(status, 0) + 1
             print()
 
@@ -300,7 +309,7 @@ def run(target_dir: str, *, model: str = "gpt-5-mini") -> int:
         return 1
 
     try:
-        return asyncio.run(_run_all(base_dir, rows, model=model))
+        return asyncio.run(_run_all(base_dir, results_csv, rows, model=model))
     except KeyboardInterrupt:
         print("Interrupted", file=sys.stderr)
         return 130
