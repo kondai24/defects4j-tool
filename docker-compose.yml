@@ -7,6 +7,10 @@ services:
     environment:
       - TZ=America/Los_Angeles
       - JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+    # FIX_PROVIDER / ANTHROPIC_API_KEY / OPENAI_API_KEY（.env.example を参照）
+    env_file:
+      - path: .env
+        required: false
     working_dir: /workspace
     volumes:
       - ./workspace:/workspace

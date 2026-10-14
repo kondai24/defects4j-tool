@@ -29,16 +29,42 @@ docker exec -it defects4j-container bash
 docker compose down
 ```
 
-## Copilot のセットアップ
+## fix プロバイダ（Claude / Codex）のセットアップ
 
-Docker セットアップ後に Copilot を使う場合は、以下を実行します。
+fix ステップは Claude（Claude Agent SDK）と Codex（OpenAI Codex SDK）のどちらかで実行します。
+どちらを使うかは環境変数 `FIX_PROVIDER` で切り替え、認証はどちらも API キーで行います。
+
+リポジトリルートで `.env.example` をコピーして `.env` を作り、値を設定します（`.env` は git 管理外）。
 
 ```bash
-copilot
+cp .env.example .env
 ```
 
-起動後に `/login` を入力してログインします。  
-ブラウザで信頼/許可のボタンを押し、認証完了後に閉じてください。
+| 変数 | 内容 |
+| --- | --- |
+| `FIX_PROVIDER` | `claude` または `codex`。未設定・不正な値の場合、fix はエラーで止まります |
+| `ANTHROPIC_API_KEY` | `FIX_PROVIDER=claude` のときに必要 |
+| `OPENAI_API_KEY` | `FIX_PROVIDER=codex` のときに必要 |
+
+`.env` は `docker-compose.yml` の `env_file` でコンテナに渡されます。`.env` を変更したら `docker compose up -d` でコンテナを作り直してください。
+
+モデル名は `--model`（plan モードでは `model`）で指定します。既定値はないため、指定しないとエラーになります。
+プロバイダに合ったモデル名を指定してください（例: Claude なら `claude-sonnet-5-5`、Codex なら `gpt-5-mini`）。
+
+### プロバイダごとのアクセス範囲
+
+どちらも作業ディレクトリ（cwd）は修正対象 Java ファイルのあるディレクトリです。
+
+| | Claude | Codex |
+| --- | --- | --- |
+| 使えるツール | Read / Edit / Write / Glob / Grep（シェルなし） | シェル（ファイルの読み取りもシェル経由）、ファイル編集 |
+| cwd 外へのアクセス | フックで拒否 | 拒否できない（Docker 内では OS サンドボックスが動かないため `full_access` で実行）。実行ログから検出して警告 |
+| Web 検索 | なし | 無効化 |
+
+Codex の実行ログは `<out_dir>/codex_logs/<project>_<id>.jsonl` に保存されます。
+cwd 外（例: 正解パッチがある `/defects4j/framework/projects/*/patches/` や他の out_dir）へのアクセスが検出されたバグは、
+`fix_results.txt` に `[警告] cwd 外へのアクセスを検出しました` として対象パスが記録され、SUMMARY の `Outside cwd access (warning)` に件数が出ます。
+検出はコマンド文字列とファイル変更のパスから行うため、誤検出・見逃しがあり得ます。
 
 ## 個別実行（checkout -> prompt -> fix -> test）
 
@@ -52,7 +78,7 @@ python pipeline.py checkout --in experiment.csv --out-dir Normal
 python pipeline.py prompts --dir Normal --mode normal
 
 # 3) fix
-python pipeline.py fix --dir Normal --model gpt-5-mini
+python pipeline.py fix --dir Normal --model claude-sonnet-5-5
 
 # 4) test
 python pipeline.py test --dir Normal
@@ -64,6 +90,7 @@ python pipeline.py test --dir Normal
 - `Normal/bug-location.md`
 - 各対象 Java ファイルの隣に `*_prompt.md`
 - `Normal/fix_results.txt`
+- `Normal/codex_logs/*.jsonl`（`FIX_PROVIDER=codex` のときのみ）
 - `python pipeline.py test` 実行後、`Normal/results.csv` の `test_status` / `error_count` / `failing_tests` が更新
 - `prompts` / `fix` 実行後、`Normal/results.csv` にバグごとの所要時間（秒）が記録される（下記）
 
@@ -72,7 +99,7 @@ python pipeline.py test --dir Normal
 | カラム | 内容 |
 | --- | --- |
 | `prompt_time_sec` | prompt 1 件の生成時間。バグ情報（`defects4j info` / JIRA）の取得から `*_prompt.md` の書き出しまで。修正対象ファイルの特定（`defects4j export`）は含まない |
-| `fix_time_sec` | Copilot セッション 1 回の時間（起動〜応答〜終了）。タイムアウト・エラー時も記録 |
+| `fix_time_sec` | fix セッション 1 回の時間（起動〜応答〜終了）。タイムアウト・エラー時も記録 |
 | `prompt_fix_time_sec` | `prompt_time_sec + fix_time_sec`（両方ある場合のみ） |
 
 - 各ステップの開始時に該当カラムを空にし、1 件終わるごとに書き込みます（途中で止めても完了分は残ります）。
@@ -98,7 +125,7 @@ python pipeline.py run --plan plan.yml --only normal-gpt4.1,cot_with_ast-gpt4.1
 
 - `in_csv`: 入力 CSV（例: `experiment.csv`）
 - `defaults.steps`: 実行順（通常は `[checkout, prompts, fix, test]`）
-- `defaults.model`: fix で使うモデル名
+- `defaults.model`: fix で使うモデル名（`FIX_PROVIDER` に合ったもの。未指定だとエラー）
 - `variants[].out_dir`: 実行対象ディレクトリ
 - `variants[].prompts.type`:
   - `generate`: prompt を新規生成
