@@ -6,7 +6,6 @@ defaults:
   steps: [checkout, prompts, fix, test]
   model: gpt-4.1
   continue_on_error: true
-  fix_mode: fix
 
 variants:
   - name: normal-gpt4.1
