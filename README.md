@@ -70,31 +70,34 @@ cwd 外（例: 正解パッチがある `/defects4j/framework/projects/*/patches
 
 ## 個別実行（checkout -> prompt -> fix -> test）
 
+checkout・修正したコードや実験結果は `/workspace/runs/`（ホスト側の `workspace/runs/`）に置きます。
+このフォルダ全体を `.gitignore` で除外しているため、配下の生成物はこのリポジトリの Git 管理対象になりません。
+
 実行順は次の 4 ステップです。
 
 ```bash
 # 1) checkout
-python pipeline.py checkout --in experiment.csv --out-dir Normal
+python pipeline.py checkout --in experiment.csv --out-dir runs/Normal
 
 # 2) prompt 生成（fix 前に必須）
-python pipeline.py prompts --dir Normal --mode normal
+python pipeline.py prompts --dir runs/Normal --mode normal
 
 # 3) fix
-python pipeline.py fix --dir Normal --model claude-sonnet-5-5
+python pipeline.py fix --dir runs/Normal --model claude-sonnet-5-5
 
 # 4) test
-python pipeline.py test --dir Normal
+python pipeline.py test --dir runs/Normal
 ```
 
 主な生成・更新ファイル:
 
-- `Normal/results.csv`
-- `Normal/bug-location.md`
+- `runs/Normal/results.csv`
+- `runs/Normal/bug-location.md`
 - 各対象 Java ファイルの隣に `*_prompt.md`
-- `Normal/fix_results.txt`
-- `Normal/codex_logs/*.jsonl`（`FIX_PROVIDER=codex` のときのみ）
-- `python pipeline.py test` 実行後、`Normal/results.csv` の `test_status` / `error_count` / `failing_tests` が更新
-- `prompts` / `fix` 実行後、`Normal/results.csv` にバグごとの所要時間（秒）が記録される（下記）
+- `runs/Normal/fix_results.txt`
+- `runs/Normal/codex_logs/*.jsonl`（`FIX_PROVIDER=codex` のときのみ）
+- `python pipeline.py test` 実行後、`runs/Normal/results.csv` の `test_status` / `error_count` / `failing_tests` が更新
+- `prompts` / `fix` 実行後、`runs/Normal/results.csv` にバグごとの所要時間（秒）が記録される（下記）
 
 ### results.csv の所要時間カラム
 
@@ -174,6 +177,18 @@ defaults:
   effort: medium
   continue_on_error: false
 ```
+
+この plan の出力先は `runs/trial_opus55_normal`、`runs/trial_opus55_ast`、`runs/trial_opus55_cfg_pdg` です。
+plan モードでは出力先を親フォルダごと自動作成します。事前の `mkdir` は不要です。
+実行対象の出力先が1つでも既に存在する場合（空フォルダも含む）は、全 variant の処理を開始せずエラーで停止します。
+`--only` を指定した場合は、選択した variant の出力先だけを確認・作成します。
+`out_dir` は実行時のカレントディレクトリ基準なので、以下はコンテナ内 `/workspace` で実行してください。
+
+```bash
+python pipeline.py run --plan opus-trial.yaml
+```
+
+AST 条件だけ実行する場合は `--only ast` を付けます。
 
 ## experiment.csv のカラム仕様
 

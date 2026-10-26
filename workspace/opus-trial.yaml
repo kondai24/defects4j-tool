@@ -10,19 +10,19 @@ defaults:
 
 variants:
   - name: normal
-    out_dir: trial_opus55_normal
+    out_dir: runs/trial_opus55_normal
     prompts:
       type: generate
       mode: normal
 
   - name: ast
-    out_dir: trial_opus55_ast
+    out_dir: runs/trial_opus55_ast
     prompts:
       type: generate
       mode: AST
 
   - name: cfg_pdg
-    out_dir: trial_opus55_cfg_pdg
+    out_dir: runs/trial_opus55_cfg_pdg
     prompts:
       type: generate
       mode: CFG_PDG

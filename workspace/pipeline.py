@@ -183,8 +183,8 @@ def _run_variant(
 
     out_dir_path = Path(out_dir)
     if not out_dir_path.exists() or not out_dir_path.is_dir():
-        print(f"[skip] variant '{name}': out_dir not found: {out_dir_path}")
-        return 0
+        print(f"Error: variant '{name}': out_dir not found: {out_dir_path}", file=sys.stderr)
+        return 2
 
     log_path = out_dir_path / "run_all_results.txt"
     with log_path.open("w", encoding="utf-8", newline="\n") as log_fh:
@@ -285,6 +285,23 @@ def run_plan(plan_path: str, only: Optional[str]) -> int:
         if wanted is None or str(vd.get("name") or vd.get("out_dir") or "").strip() in wanted
     ]
 
+    # Check every selected output before creating directories or running any step.
+    output_dirs = set()
+    for vd in selected:
+        name = str(vd.get("name") or vd.get("out_dir") or "").strip()
+        raw = str(vd.get("out_dir") or "").strip()
+        if not raw:
+            print(f"Error: variant '{name}' is missing required key: out_dir", file=sys.stderr)
+            return 2
+        path = Path(_resolve_path(run_base_dir, raw))
+        if path.exists() or path.is_symlink():
+            print(f"Error: variant '{name}': out_dir already exists: {path}", file=sys.stderr)
+            return 2
+        if path in output_dirs:
+            print(f"Error: duplicate out_dir: {path}", file=sys.stderr)
+            return 2
+        output_dirs.add(path)
+
     # fix を含む variant があれば、checkout などを始める前に provider / model を検証する
     for vd in selected:
         steps = _normalize_steps(vd.get("steps", defaults.get("steps")), "steps")
@@ -294,6 +311,14 @@ def run_plan(plan_path: str, only: Optional[str]) -> int:
         if error:
             name = str(vd.get("name") or vd.get("out_dir") or "").strip()
             print(f"Error: variant '{name}': {error}", file=sys.stderr)
+            return 2
+
+    for vd in selected:
+        path = Path(_resolve_path(run_base_dir, str(vd["out_dir"]).strip()))
+        try:
+            path.mkdir(parents=True, exist_ok=False)
+        except OSError as exc:
+            print(f"Error: cannot create out_dir: {path}: {exc}", file=sys.stderr)
             return 2
 
     overall_rc = 0
