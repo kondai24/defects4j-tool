@@ -12,7 +12,7 @@ import asyncio
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .fix_common import FIX_TIMEOUT_SEC, FixResponse, build_prompt, is_within, resolve_against
+from .fix_common import FIX_TIMEOUT_SEC, FixResponse, FixSessionError, build_prompt, is_within, resolve_against
 
 try:
     from claude_agent_sdk import ClaudeAgentOptions, HookMatcher, ResultMessage, query
@@ -75,17 +75,25 @@ def _make_path_guard(cwd: Path):
     return guard
 
 
-async def _collect_result(prompt: str, options: "ClaudeAgentOptions") -> Optional[str]:
+async def _collect_result(prompt: str, options: "ClaudeAgentOptions") -> FixResponse:
     result: Optional[ResultMessage] = None
     async for message in query(prompt=prompt, options=options):
         if isinstance(message, ResultMessage):
             result = message
     if result is None:
-        return None
+        return FixResponse(content=None)
+    usage = result.usage or {}
+    response = FixResponse(
+        content=result.result,
+        total_cost_usd=result.total_cost_usd,
+        num_turns=result.num_turns,
+        input_tokens=usage.get("input_tokens"),
+        output_tokens=usage.get("output_tokens"),
+    )
     if result.is_error:
         detail = "; ".join(result.errors or []) or (result.result or "")
-        raise RuntimeError(f"Claude session failed ({result.subtype}): {detail}")
-    return result.result
+        raise FixSessionError(f"Claude session failed ({result.subtype}): {detail}", response)
+    return response
 
 
 async def run_fix(*, bug_cwd: Path, prompt_md: str, target_file: str, model: str) -> FixResponse:
@@ -102,8 +110,7 @@ async def run_fix(*, bug_cwd: Path, prompt_md: str, target_file: str, model: str
         setting_sources=[],
         skills=[],
     )
-    content = await asyncio.wait_for(
+    return await asyncio.wait_for(
         _collect_result(build_prompt(prompt_md, target_file), options),
         timeout=FIX_TIMEOUT_SEC,
     )
-    return FixResponse(content=content)

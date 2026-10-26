@@ -28,6 +28,7 @@ from . import bug_locator
 from . import fix_claude
 from . import fix_codex
 from . import timing
+from .fix_common import FixSessionError
 
 
 PROVIDER_ENV = "FIX_PROVIDER"
@@ -147,6 +148,8 @@ async def _run_fix_for_one(
         _write_fix_result(results_fh, provider, project, bug_id, "タイムアウトが発生しました")
         return "timeout"
     except Exception as exc:
+        if isinstance(exc, FixSessionError):
+            timing.record_fix_usage(results_csv, project, bug_id, exc.response)
         print(f"エラーのため、fixを実施できませんでした: {exc}")
         _write_fix_result(
             results_fh, provider, project, bug_id, f"エラーが発生しました: {type(exc).__name__}: {exc}"
@@ -157,6 +160,7 @@ async def _run_fix_for_one(
         elapsed = time.perf_counter() - start
         timing.record_time(results_csv, project, bug_id, timing.FIX_TIME_COL, elapsed)
 
+    timing.record_fix_usage(results_csv, project, bug_id, response)
     content = response.content if response.content is not None else "responseがNoneでした"
     _write_fix_result(results_fh, provider, project, bug_id, content, response.outside_accesses)
     if response.outside_accesses:
@@ -183,6 +187,7 @@ async def _run_all(
         return 1
 
     timing.clear_column(results_csv, timing.FIX_TIME_COL)
+    timing.clear_fix_usage(results_csv)
     print(f"provider: {provider} / model: {model}")
 
     counters: Dict[str, int] = {

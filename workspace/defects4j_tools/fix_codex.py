@@ -16,7 +16,7 @@ import re
 from pathlib import Path
 from typing import Any, Iterable, List
 
-from .fix_common import FIX_TIMEOUT_SEC, FixResponse, build_prompt, is_within, resolve_against
+from .fix_common import FIX_TIMEOUT_SEC, FixResponse, FixSessionError, build_prompt, is_within, resolve_against
 
 try:
     from openai_codex import ApprovalMode, AsyncCodex, Sandbox
@@ -105,6 +105,14 @@ async def run_fix(*, bug_cwd: Path, prompt_md: str, target_file: str, model: str
         timeout=FIX_TIMEOUT_SEC,
     )
     _write_items_log(result.items, log_path)
+    # Each fix starts a fresh thread, so total covers this entire fix session.
+    usage = result.usage.total if result.usage is not None else None
+    response = FixResponse(
+        content=result.final_response,
+        outside_accesses=find_outside_accesses(result.items, cwd),
+        input_tokens=usage.input_tokens if usage is not None else None,
+        output_tokens=usage.output_tokens if usage is not None else None,
+    )
     if result.error is not None:
-        raise RuntimeError(f"Codex turn failed ({result.status}): {result.error}")
-    return FixResponse(content=result.final_response, outside_accesses=find_outside_accesses(result.items, cwd))
+        raise FixSessionError(f"Codex turn failed ({result.status}): {result.error}", response)
+    return response

@@ -16,6 +16,18 @@ class FixResponse:
     content: Optional[str]
     # cwd 外へのアクセス（Codex のみ検出。Claude はフックで拒否するため常に空）
     outside_accesses: List[str] = field(default_factory=list)
+    total_cost_usd: Optional[float] = None
+    num_turns: Optional[int] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+
+
+class FixSessionError(RuntimeError):
+    """Provider failure with any usage reported before the failure."""
+
+    def __init__(self, message: str, response: FixResponse):
+        super().__init__(message)
+        self.response = response
 
 
 def build_prompt(prompt_md: str, target_file: str) -> str:
