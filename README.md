@@ -51,6 +51,8 @@ cp .env.example .env
 モデル名は `--model`（plan モードでは `model`）で指定します。既定値はないため、指定しないとエラーになります。
 プロバイダに合ったモデル名を指定してください（例: Claude なら `claude-sonnet-5-5`、Codex なら `gpt-5-mini`）。
 
+Claude の fix は SDK に `DISABLE_PROMPT_CACHING=1` を渡し、セッション内・セッション間のプロンプトキャッシュを無効にします。
+
 ### プロバイダごとのアクセス範囲
 
 どちらも作業ディレクトリ（cwd）は修正対象 Java ファイルのあるディレクトリです。

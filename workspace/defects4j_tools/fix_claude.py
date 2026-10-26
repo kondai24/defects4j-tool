@@ -93,6 +93,8 @@ async def run_fix(*, bug_cwd: Path, prompt_md: str, target_file: str, model: str
     options = ClaudeAgentOptions(
         cwd=str(cwd),
         model=model,
+        # fix セッション内・セッション間ともにプロンプトキャッシュを使わない
+        env={"DISABLE_PROMPT_CACHING": "1"},
         tools=TOOLS,
         permission_mode="dontAsk",
         hooks={"PreToolUse": [HookMatcher(matcher=None, hooks=[_make_path_guard(cwd)])]},
