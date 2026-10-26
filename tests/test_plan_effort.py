@@ -22,18 +22,25 @@ class PlanEffortTests(unittest.TestCase):
         for override, model, effort in cases:
             with self.subTest(override=override), tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
-                (root / "results.csv").write_text("project,id\nCli,1\n")
+                out_dir = root / "trial"
                 java = root / "A.java"
                 java.write_text("class A {}")
                 (root / "A_prompt.md").write_text("fix")
                 plan = {"in_csv": "input.csv", "defaults": {
                     "steps": ["fix"], "model": "claude-opus-5-5", "effort": "medium"},
-                    "variants": [{"name": "trial", "out_dir": str(root), **override}]}
+                    "variants": [{"name": "trial", "out_dir": str(out_dir), **override}]}
                 plan_file = root / "plan.yaml"
                 plan_file.write_text(yaml.safe_dump(plan))
                 collect = AsyncMock(return_value=FixResponse("done"))
                 batch = pipeline.batch_fix
+                run_fix = batch.run
+
+                def prepare_and_fix(target_dir, **kwargs):
+                    (Path(target_dir) / "results.csv").write_text("project,id\nCli,1\n")
+                    return run_fix(target_dir, **kwargs)
+
                 with patch.dict(os.environ, {"FIX_PROVIDER": "claude", "ANTHROPIC_API_KEY": "test"}), \
+                     patch.object(batch, "run", side_effect=prepare_and_fix), \
                      patch.object(batch.fix_claude, "_collect_result", collect), \
                      patch.object(batch.bug_locator, "resolve_bug_dir", return_value=root), \
                      patch.object(batch.bug_locator, "run_defects4j_export_classes_modified", return_value="A"), \
@@ -43,7 +50,7 @@ class PlanEffortTests(unittest.TestCase):
                 options = collect.await_args.args[1]
                 self.assertEqual(options.model, model)
                 self.assertEqual(options.effort, effort)
-                log = (root / "run_all_results.txt").read_text()
+                log = (out_dir / "run_all_results.txt").read_text()
                 self.assertIn(f"model: {model}", log)
                 self.assertIn(f"effort: {effort or 'default'}", log)
 
@@ -52,7 +59,7 @@ class PlanEffortTests(unittest.TestCase):
             with self.subTest(effort=effort, provider=provider), tempfile.TemporaryDirectory() as tmp:
                 plan = {"in_csv": "input.csv", "defaults": {
                     "model": "test", "effort": effort},
-                    "variants": [{"name": "trial", "out_dir": tmp}]}
+                    "variants": [{"name": "trial", "out_dir": str(Path(tmp) / "trial")}]}
                 path = Path(tmp) / "plan.yaml"
                 path.write_text(yaml.safe_dump(plan))
                 with patch.dict(os.environ, {"FIX_PROVIDER": provider}), \
