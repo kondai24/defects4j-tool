@@ -213,6 +213,23 @@ python pipeline.py prompts_copy --from-dir Normal --to-dir CoT-with-AST
 
 ## トラブルシューティング
 
+### CFG/PDG 生成で `UnsupportedClassVersionError` が出る
+
+Java 17 用のクラス（class file version `61.0`）を Java 11（対応上限 `55.0`）で起動すると発生します。
+コンテナには Defects4J 用の Java 11 と Joern 用の Java 21 を同梱し、
+`joern-parse` / `joern-export` の実行時だけ `JOERN_JAVA_HOME` の Java を使用します。
+Joern は `4.0.665` に固定しています（[公式の Java 要件](https://github.com/joernio/joern/tree/v4.0.665#requirements)）。
+
+既存のコンテナにはイメージの再ビルドが必要です。リポジトリルートで実行してください。
+
+```bash
+docker compose up -d --build
+```
+
+その後、コンテナ内で失敗した `prompts --mode CFG_PDG` コマンドを再実行してください。
+Docker 外で実行する場合は、`JOERN_JAVA_HOME` に JDK 21 のインストール先を設定してください。
+未設定の場合は従来どおり実行環境の Java を使用します。
+
 ### `defects4j` が見つからない
 
 ```bash

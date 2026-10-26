@@ -10,6 +10,7 @@
 import argparse
 import csv
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -286,6 +287,13 @@ def read_java_code_utf8sig(java_file: Path) -> Optional[str]:
 
 
 def generate_cfg_pdg(java_file: Path) -> Optional[str]:
+    # Joern needs a newer JVM than Defects4J. Scope the override to its children.
+    joern_env = os.environ.copy()
+    joern_java_home = joern_env.get("JOERN_JAVA_HOME")
+    if joern_java_home:
+        joern_env["JAVA_HOME"] = joern_java_home
+        joern_env["PATH"] = str(Path(joern_java_home) / "bin") + os.pathsep + joern_env.get("PATH", "")
+
     cpg_dir = java_file.parent / "cpg"
 
     if cpg_dir.exists():
@@ -321,7 +329,7 @@ def generate_cfg_pdg(java_file: Path) -> Optional[str]:
         str(cpg_bin),
     ]
     try:
-        subprocess.run(cmd_parse, check=True, capture_output=True, text=True)
+        subprocess.run(cmd_parse, check=True, capture_output=True, text=True, env=joern_env)
     except subprocess.CalledProcessError as exc:
         msg = (exc.stderr or exc.stdout or "").strip()
         print(f"[warn] joern-parse failed for {java_file}: {msg}", file=sys.stderr)
@@ -338,7 +346,7 @@ def generate_cfg_pdg(java_file: Path) -> Optional[str]:
         str(graph_dir),
     ]
     try:
-        subprocess.run(cmd_export, check=True, capture_output=True, text=True)
+        subprocess.run(cmd_export, check=True, capture_output=True, text=True, env=joern_env)
     except subprocess.CalledProcessError as exc:
         msg = (exc.stderr or exc.stdout or "").strip()
         print(f"[warn] joern-export failed for {java_file}: {msg}", file=sys.stderr)
