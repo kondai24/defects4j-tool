@@ -12,10 +12,13 @@ import csv
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from .fix_common import FixResponse
+
 PROMPT_TIME_COL = "prompt_time_sec"
 FIX_TIME_COL = "fix_time_sec"
 TOTAL_TIME_COL = "prompt_fix_time_sec"
 TIME_COLUMNS = [PROMPT_TIME_COL, FIX_TIME_COL, TOTAL_TIME_COL]
+FIX_USAGE_COLUMNS = ["total_cost_usd", "num_turns", "input_tokens", "output_tokens"]
 
 
 def format_seconds(seconds: Optional[float]) -> str:
@@ -43,14 +46,14 @@ def read_column(results_csv: Path, column: str) -> Dict[tuple, str]:
         }
 
 
-def _rewrite(results_csv: Path, update) -> None:
+def _rewrite(results_csv: Path, update, extra_columns=()) -> None:
     """Apply update(row) to every row and rewrite results.csv, keeping all other columns."""
     with results_csv.open(newline="", encoding="utf-8") as fh:
         reader = csv.DictReader(fh)
         fieldnames: List[str] = list(reader.fieldnames or [])
         rows = list(reader)
 
-    for col in TIME_COLUMNS:
+    for col in [*TIME_COLUMNS, *extra_columns]:
         if col not in fieldnames:
             fieldnames.append(col)
 
@@ -71,6 +74,26 @@ def clear_column(results_csv: Path, column: str) -> None:
         row[TOTAL_TIME_COL] = _total(row)
 
     _rewrite(results_csv, update)
+
+
+def clear_fix_usage(results_csv: Path) -> None:
+    """Clear all usage from the previous fix run, including skipped rows."""
+    def update(row: Dict[str, str]) -> None:
+        for column in FIX_USAGE_COLUMNS:
+            row[column] = ""
+
+    _rewrite(results_csv, update, FIX_USAGE_COLUMNS)
+
+
+def record_fix_usage(results_csv: Path, project: str, bug_id: str, response: FixResponse) -> None:
+    """Persist provider-reported usage; unknown values remain empty, not zero."""
+    def update(row: Dict[str, str]) -> None:
+        if (row.get("project") or "").strip() == project and (row.get("id") or "").strip() == bug_id:
+            for column in FIX_USAGE_COLUMNS:
+                value = getattr(response, column)
+                row[column] = "" if value is None else str(value)
+
+    _rewrite(results_csv, update, FIX_USAGE_COLUMNS)
 
 
 def record_time(results_csv: Path, project: str, bug_id: str, column: str, seconds: Optional[float]) -> None:

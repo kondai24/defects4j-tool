@@ -109,6 +109,30 @@ python pipeline.py test --dir Normal
 - `prompts_copy`（plan の `prompts.type: copy`）では、コピー時間ではなくコピー元 `results.csv` の `prompt_time_sec` を引き継ぎます。
 - 同じ JIRA URL を持つバグが複数ある場合、2 件目以降は取得結果をキャッシュから使うため短くなります。
 
+### results.csv の fix 使用量カラム
+
+`fix` 実行時に次の4列を追加し、各行（`project,id`）に1バグの fix セッション全体の値を保存します。
+
+| カラム | Claude | Codex |
+| --- | --- | --- |
+| `total_cost_usd` | SDK が返すセッション合計の推定費用（USD。確定請求額ではない） | 空欄（現行 SDK は費用を返さない） |
+| `num_turns` | SDK の `ResultMessage.num_turns` | 空欄（Claude 相当のターン数を返さない） |
+| `input_tokens` | `ResultMessage.usage.input_tokens`（キャッシュ読み書き分を除く） | `TurnResult.usage.total.input_tokens`（キャッシュ分を含む） |
+| `output_tokens` | `ResultMessage.usage.output_tokens` | `TurnResult.usage.total.output_tokens`（推論分を含む） |
+
+- トークン数は最後の API 呼び出しだけでなく、セッション内の呼び出しの累積値です。Codex はバグごとに新しいスレッドを開始するため `total` を使います。
+- プロバイダによって入力トークンのキャッシュの扱いやターンの定義が異なります。Claude は現在プロンプトキャッシュを無効化しています。
+- 実行開始時に4列の古い値を消し、各セッション終了後に保存します。スキップ・タイムアウト・使用量を返さない例外では空欄となります。使用量付きのエラー結果を取得できた場合は、その値を保存します（Codex SDK 自体が例外を投げる失敗では取得できません）。不明値を `0` で埋めません。
+- `duration_ms` は追加せず、既存の Python 実測値 `fix_time_sec` を使います。
+
+参照: [Claude の費用・使用量](https://code.claude.com/docs/en/agent-sdk/cost-tracking)、[Codex App Server](https://developers.openai.com/codex/app-server/)。
+
+使用量保存の回帰テスト（API 呼び出しなし）:
+
+```bash
+uv run --no-project --with claude-agent-sdk==0.2.166 --with openai-codex==0.162.1 python -m unittest discover -s tests -v
+```
+
 ## 一括実行（plan モード: run --plan）
 
 複数の出力ディレクトリ（variant）をまとめて実行する場合は `run --plan` を使います。
