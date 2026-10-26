@@ -56,6 +56,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Model name for the provider selected by FIX_PROVIDER (required)",
     )
 
+    p_fix.add_argument("--effort", choices=["low", "medium", "high", "xhigh", "max"],
+                       default=None, help="Claude reasoning effort (omitted: model default)")
+
     p_run = sub.add_parser("run", help="Run checkout/prompts/fix/test for multiple variants from a YAML plan")
     p_run.add_argument("--plan", dest="plan_path", required=True, help="YAML plan file path")
     p_run.add_argument(
@@ -160,6 +163,7 @@ def _run_variant(
 
     steps = _normalize_steps(variant.get("steps", defaults.get("steps")), f"variants[{name}].steps")
     model = _variant_model(defaults, variant)
+    effort = variant.get("effort", defaults.get("effort"))
     continue_on_error = bool(variant.get("continue_on_error", defaults.get("continue_on_error", True)))
 
     prompts_cfg = variant.get("prompts", defaults.get("prompts", {"type": "generate", "mode": "normal"}))
@@ -197,6 +201,7 @@ def _run_variant(
             print(f"  prompts: {prompts_type}" + (f" (mode={prompts_mode})" if prompts_type == "generate" else ""))
             print(f"  provider: {batch_fix.get_provider() or '-'}")
             print(f"  model: {model or '-'}")
+            print(f"  effort: {effort or 'default'}")
             print("=" * 60)
 
             for step in steps:
@@ -218,7 +223,7 @@ def _run_variant(
                             return 0
                         rc = prompts_copy.run(from_dir_abs, out_dir)
                 elif step == "fix":
-                    rc = batch_fix.run(out_dir, model=model)
+                    rc = batch_fix.run(out_dir, model=model, effort=effort)
                 elif step == "test":
                     rc = batch_test.run(out_dir)
                 else:
@@ -285,7 +290,7 @@ def run_plan(plan_path: str, only: Optional[str]) -> int:
         steps = _normalize_steps(vd.get("steps", defaults.get("steps")), "steps")
         if "fix" not in steps:
             continue
-        error = batch_fix.validate_config(_variant_model(defaults, vd))
+        error = batch_fix.validate_config(_variant_model(defaults, vd), vd.get("effort", defaults.get("effort")))
         if error:
             name = str(vd.get("name") or vd.get("out_dir") or "").strip()
             print(f"Error: variant '{name}': {error}", file=sys.stderr)
@@ -326,7 +331,7 @@ def main() -> int:
         return prompts_copy.run(args.from_dir, args.to_dir)
 
     if args.command == "fix":
-        return batch_fix.run(args.target_dir, model=args.model)
+        return batch_fix.run(args.target_dir, model=args.model, effort=args.effort)
 
     if args.command == "run":
         return run_plan(args.plan_path, args.only)

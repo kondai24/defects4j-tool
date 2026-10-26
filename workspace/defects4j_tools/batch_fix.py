@@ -42,7 +42,7 @@ def get_provider() -> str:
     return (os.environ.get(PROVIDER_ENV) or "").strip()
 
 
-def validate_config(model: Optional[str]) -> Optional[str]:
+def validate_config(model: Optional[str], effort: Optional[str] = None) -> Optional[str]:
     """fix を始める前に provider / model / API キーを検証し、問題があればエラーメッセージを返す。"""
     provider = get_provider()
     if not provider:
@@ -51,6 +51,11 @@ def validate_config(model: Optional[str]) -> Optional[str]:
         return f"{PROVIDER_ENV}={provider} は不正です。{' | '.join(PROVIDERS)} のいずれかを指定してください。"
     if not (model or "").strip():
         return "モデルを指定してください（fix は --model、plan モードは model）。"
+    if effort is not None:
+        if not isinstance(effort, str) or effort not in {"low", "medium", "high", "xhigh", "max"}:
+            return "effort は low / medium / high / xhigh / max のいずれかを指定してください。"
+        if provider != "claude":
+            return "effort の指定は FIX_PROVIDER=claude の場合のみ対応しています。"
     spec = PROVIDERS[provider]
     if not spec["module"].is_available():
         return f"Python package '{spec['package']}' が見つかりません。"
@@ -97,12 +102,15 @@ def _write_fix_result(
     fh.write("\n")
 
 
-async def _run_provider(provider: str, *, bug_cwd: Path, prompt_md: str, target_file: str, model: str, log_path: Path):
+async def _run_provider(provider: str, *, bug_cwd: Path, prompt_md: str, target_file: str, model: str,
+                        log_path: Path, effort: Optional[str] = None):
     if provider == "codex":
         return await fix_codex.run_fix(
             bug_cwd=bug_cwd, prompt_md=prompt_md, target_file=target_file, model=model, log_path=log_path
         )
-    return await fix_claude.run_fix(bug_cwd=bug_cwd, prompt_md=prompt_md, target_file=target_file, model=model)
+    return await fix_claude.run_fix(
+        bug_cwd=bug_cwd, prompt_md=prompt_md, target_file=target_file, model=model, effort=effort
+    )
 
 
 async def _run_fix_for_one(
@@ -117,6 +125,7 @@ async def _run_fix_for_one(
     results_fh: TextIO,
     results_csv: Path,
     counters: Dict[str, int],
+    effort: Optional[str] = None,
 ) -> str:
     label = f"{project}-{bug_id}"
     print(f"[{idx}/{total}] fixing {label}")
@@ -142,6 +151,7 @@ async def _run_fix_for_one(
             target_file=java_file.name,
             model=model,
             log_path=log_path,
+            effort=effort,
         )
     except (asyncio.TimeoutError, TimeoutError):
         print("タイムアウトのため、fixを実施できませんでした")
@@ -179,7 +189,8 @@ async def _run_fix_for_one(
 
 
 async def _run_all(
-    base_dir: Path, results_csv: Path, rows: List[Dict[str, str]], *, provider: str, model: str
+    base_dir: Path, results_csv: Path, rows: List[Dict[str, str]], *, provider: str, model: str,
+    effort: Optional[str] = None,
 ) -> int:
     total = sum(1 for r in rows if (r.get("project") or "").strip() and (r.get("id") or "").strip())
     if total == 0:
@@ -188,7 +199,7 @@ async def _run_all(
 
     timing.clear_column(results_csv, timing.FIX_TIME_COL)
     timing.clear_fix_usage(results_csv)
-    print(f"provider: {provider} / model: {model}")
+    print(f"provider: {provider} / model: {model} / effort: {effort or 'default'}")
 
     counters: Dict[str, int] = {
         "updated": 0,
@@ -254,6 +265,7 @@ async def _run_all(
                 results_fh,
                 results_csv,
                 counters,
+                effort=effort,
             )
             counters[status] = counters.get(status, 0) + 1
             print()
@@ -276,10 +288,10 @@ async def _run_all(
     return 0
 
 
-def run(target_dir: str, *, model: Optional[str]) -> int:
+def run(target_dir: str, *, model: Optional[str], effort: Optional[str] = None) -> int:
     """Run fix for all rows in <target_dir>/results.csv."""
 
-    error = validate_config(model)
+    error = validate_config(model, effort)
     if error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
@@ -297,7 +309,7 @@ def run(target_dir: str, *, model: Optional[str]) -> int:
         return 1
 
     try:
-        return asyncio.run(_run_all(base_dir, results_csv, rows, provider=get_provider(), model=model))
+        return asyncio.run(_run_all(base_dir, results_csv, rows, provider=get_provider(), model=model, effort=effort))
     except KeyboardInterrupt:
         print("Interrupted", file=sys.stderr)
         return 130

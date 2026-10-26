@@ -96,11 +96,13 @@ async def _collect_result(prompt: str, options: "ClaudeAgentOptions") -> FixResp
     return response
 
 
-async def run_fix(*, bug_cwd: Path, prompt_md: str, target_file: str, model: str) -> FixResponse:
+async def run_fix(*, bug_cwd: Path, prompt_md: str, target_file: str, model: str,
+                  effort: Optional[str] = None) -> FixResponse:
     cwd = bug_cwd.resolve()
     options = ClaudeAgentOptions(
         cwd=str(cwd),
         model=model,
+        effort=effort,
         # fix セッション内・セッション間ともにプロンプトキャッシュを使わない
         env={"DISABLE_PROMPT_CACHING": "1"},
         tools=TOOLS,
