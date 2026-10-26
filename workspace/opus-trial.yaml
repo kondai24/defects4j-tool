@@ -1,0 +1,28 @@
+# Run inside /workspace with FIX_PROVIDER=claude and ANTHROPIC_API_KEY configured:
+# python pipeline.py run --plan opus-trial.yaml
+in_csv: experiment_opus55_trial.csv
+
+defaults:
+  steps: [checkout, prompts, fix, test]
+  model: claude-opus-5-5
+  effort: medium
+  continue_on_error: false
+
+variants:
+  - name: normal
+    out_dir: trial_opus55_normal
+    prompts:
+      type: generate
+      mode: normal
+
+  - name: ast
+    out_dir: trial_opus55_ast
+    prompts:
+      type: generate
+      mode: AST
+
+  - name: cfg_pdg
+    out_dir: trial_opus55_cfg_pdg
+    prompts:
+      type: generate
+      mode: CFG_PDG

@@ -130,7 +130,7 @@ python pipeline.py test --dir Normal
 使用量保存の回帰テスト（API 呼び出しなし）:
 
 ```bash
-uv run --no-project --with claude-agent-sdk==0.2.166 --with openai-codex==0.162.1 python -m unittest discover -s tests -v
+uv run --no-project --with claude-agent-sdk==0.2.166 --with openai-codex==0.162.1 --with pyyaml --with networkx python -m unittest discover -s tests -v
 ```
 
 ## 一括実行（plan モード: run --plan）
@@ -152,6 +152,8 @@ python pipeline.py run --plan plan.yml --only normal-gpt4.1,cot_with_ast-gpt4.1
 - `in_csv`: 入力 CSV（例: `experiment.csv`）
 - `defaults.steps`: 実行順（通常は `[checkout, prompts, fix, test]`）
 - `defaults.model`: fix で使うモデル名（`FIX_PROVIDER` に合ったもの。未指定だとエラー）
+- `defaults.effort`: Claude の reasoning effort（`low` / `medium` / `high` / `xhigh` / `max`）。省略時はモデルの既定値。Codex での指定はエラー
+- `variants[].model` / `variants[].effort`: variant ごとに defaults を上書き（`effort: null` はモデルの既定値に戻す）
 - `variants[].out_dir`: 実行対象ディレクトリ
 - `variants[].prompts.type`:
   - `generate`: prompt を新規生成
@@ -161,6 +163,17 @@ python pipeline.py run --plan plan.yml --only normal-gpt4.1,cot_with_ast-gpt4.1
 そのため、`from_dir` 側に対応する prompt ファイルが事前に存在している必要があります。
 
 各 variant のログは `out_dir/run_all_results.txt` に保存されます。
+指定した model / effort もログに記録されます。個別実行では `fix --model claude-opus-5-5 --effort medium` のように指定できます。
+
+`workspace/opus-trial.yaml` の共通設定例（各 variant に適用）:
+
+```yaml
+defaults:
+  steps: [checkout, prompts, fix, test]
+  model: claude-opus-5-5
+  effort: medium
+  continue_on_error: false
+```
 
 ## experiment.csv のカラム仕様
 
