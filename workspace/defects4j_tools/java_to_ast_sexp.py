@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import warnings
-from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
@@ -19,7 +18,6 @@ def _require_tree_sitter_languages() -> None:
         )
 
 
-@lru_cache(maxsize=None)
 def _get_java_parser():
     # tree_sitter_languages 1.10.2 は内部で非推奨の Language(path, name) を呼ぶため、
     # tree-sitter 0.21.x が FutureWarning を出す。文法バージョンを変えると AST 出力が
