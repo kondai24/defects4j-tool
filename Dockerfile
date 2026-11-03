@@ -105,5 +105,24 @@ ENV PATH="/opt/joern:${PATH}"
 RUN JAVA_HOME=${JOERN_JAVA_HOME} PATH="${JOERN_JAVA_HOME}/bin:${PATH}" joern-parse --help && \
     JAVA_HOME=${JOERN_JAVA_HOME} PATH="${JOERN_JAVA_HOME}/bin:${PATH}" joern-export --help
 
+#############################################################################
+# Setup JBMC (verify ステップ)
+#############################################################################
+# CBMC の公式 .deb に JBMC と core-models.jar が含まれる。版とハッシュを固定する。
+ARG CBMC_VERSION=6.11.0
+ARG CBMC_SHA256_AMD64=b3721aa541038384d7801ea3aeabbcddc3e8845ac8f1cbff637cf8dec7481ac8
+ARG CBMC_SHA256_ARM64=9eb8f41a7dcda8eac6338b8367d77831431f767691e4535209925bd85e315ae7
+RUN case "$(dpkg --print-architecture)" in \
+      amd64) cbmc_deb="ubuntu-24.04-cbmc-${CBMC_VERSION}-Linux.deb"; cbmc_sha="${CBMC_SHA256_AMD64}" ;; \
+      arm64) cbmc_deb="ubuntu-24.04-arm64-cbmc-${CBMC_VERSION}-Linux.deb"; cbmc_sha="${CBMC_SHA256_ARM64}" ;; \
+      *) echo "Unsupported CBMC architecture" >&2; exit 1 ;; \
+    esac && \
+    curl -fL -o /tmp/cbmc.deb "https://github.com/diffblue/cbmc/releases/download/cbmc-${CBMC_VERSION}/${cbmc_deb}" && \
+    echo "${cbmc_sha}  /tmp/cbmc.deb" | sha256sum -c - && \
+    apt-get update -y && apt-get install -y /tmp/cbmc.deb && \
+    rm -rf /tmp/cbmc.deb /var/lib/apt/lists/* && \
+    jbmc --version && test -f /usr/lib/core-models.jar
+ENV JBMC_CORE_MODELS=/usr/lib/core-models.jar
+
 # 作業ディレクトリに戻る
 WORKDIR /workspace

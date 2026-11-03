@@ -1,0 +1,1459 @@
+[
+ {
+  "function": {
+   "displayName": "__CPROVER_initialize",
+   "identifier": "__CPROVER_initialize",
+   "sourceLocation": {}
+  },
+  "hidden": false,
+  "internal": false,
+  "stepType": "function-return",
+  "thread": 0
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "uncaught_exception'",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "null",
+   "name": "pointer",
+   "type": "void *"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": true,
+  "internal": true,
+  "lhs": "malloc_site",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "null",
+   "name": "pointer",
+   "type": "struct java.lang.String *"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": true,
+  "internal": true,
+  "lhs": "tmp_object_factory",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": true,
+  "internal": true,
+  "lhs": "p0",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "null",
+   "name": "pointer",
+   "type": "struct java.lang.String *"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "members": [
+    {
+     "name": "@java.lang.Object",
+     "value": {
+      "members": [
+       {
+        "name": "@class_identifier",
+        "value": {
+         "data": "java::java.lang.Class",
+         "name": "string"
+        }
+       },
+       {
+        "name": "cproverMonitorCount",
+        "value": {
+         "binary": "00000000000000000000000000000000",
+         "data": "0",
+         "name": "integer",
+         "type": "int",
+         "width": 32
+        }
+       }
+      ],
+      "name": "struct"
+     }
+    },
+    {
+     "name": "length",
+     "value": {
+      "binary": "00000000000000000000000000000000",
+      "data": "0",
+      "name": "integer",
+      "type": "int",
+      "width": 32
+     }
+    },
+    {
+     "name": "data",
+     "value": {
+      "data": "null",
+      "name": "pointer",
+      "type": "char *"
+     }
+    }
+   ],
+   "name": "struct"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object.@java.lang.Object",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "members": [
+    {
+     "name": "@class_identifier",
+     "value": {
+      "data": "java::java.lang.Class",
+      "name": "string"
+     }
+    },
+    {
+     "name": "cproverMonitorCount",
+     "value": {
+      "binary": "00000000000000000000000000000000",
+      "data": "0",
+      "name": "integer",
+      "type": "int",
+      "width": 32
+     }
+    }
+   ],
+   "name": "struct"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object.@java.lang.Object.@class_identifier",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "java::java.lang.Class",
+   "name": "string"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object.@java.lang.Object.cproverMonitorCount",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object.length",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object.data",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "null",
+   "name": "pointer",
+   "type": "char *"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "malloc_site",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "dynamic_object",
+   "name": "pointer",
+   "type": "struct java.lang.String *"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "p0",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "dynamic_object",
+   "name": "pointer",
+   "type": "struct java.lang.String *"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "tmp_object_factory",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000010",
+   "data": "2",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": true,
+  "internal": true,
+  "lhs": "nondet_infinite_array_pointer",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "null",
+   "name": "pointer",
+   "type": "char (*)[INFINITY()]"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$0",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "name": "unknown"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "nondet_infinite_array_pointer",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "dynamic_object$0",
+   "name": "pointer",
+   "type": "char (*)[INFINITY()]"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$0",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "elements": [
+    {
+     "index": 0,
+     "value": {
+      "binary": "0011000001000010",
+      "data": "'\\u3042'",
+      "name": "integer",
+      "type": "char",
+      "width": 16
+     }
+    },
+    {
+     "index": 1,
+     "value": {
+      "binary": "0000000000111111",
+      "data": "'?'",
+      "name": "integer",
+      "type": "char",
+      "width": 16
+     }
+    }
+   ],
+   "name": "array"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": true,
+  "internal": true,
+  "lhs": "return_array",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "return_array",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": true,
+  "internal": true,
+  "lhs": "return_array$0",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "return_array$0",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object.@java.lang.Object.@class_identifier",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "java::java.lang.String",
+   "name": "string"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object.@java.lang.Object.cproverMonitorCount",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object.length",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000010",
+   "data": "2",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object.data",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "name": "unknown"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object.@java.lang.Object.cproverMonitorCount",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "hidden": false,
+  "inputID": "p0",
+  "internal": true,
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "input",
+  "thread": 0,
+  "values": [
+   {
+    "data": "dynamic_object",
+    "name": "pointer",
+    "type": "struct java.lang.String *"
+   }
+  ]
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": true,
+  "internal": true,
+  "lhs": "nondet_array_length",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": true,
+  "internal": true,
+  "lhs": "array_data_init",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "null",
+   "name": "pointer",
+   "type": "int (*)[3]"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": true,
+  "internal": true,
+  "lhs": "p1",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "null",
+   "name": "pointer",
+   "type": "struct java::array[int] *"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": true,
+  "internal": true,
+  "lhs": "nondet_array_length",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "nondet_array_length",
+  "mode": "java",
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000010",
+   "data": "2",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$1",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "members": [
+    {
+     "name": "@java.lang.Object",
+     "value": {
+      "members": [
+       {
+        "name": "@class_identifier",
+        "value": {
+         "data": "java::java.lang.Class",
+         "name": "string"
+        }
+       },
+       {
+        "name": "cproverMonitorCount",
+        "value": {
+         "binary": "00000000000000000000000000000000",
+         "data": "0",
+         "name": "integer",
+         "type": "int",
+         "width": 32
+        }
+       }
+      ],
+      "name": "struct"
+     }
+    },
+    {
+     "name": "length",
+     "value": {
+      "binary": "00000000000000000000000000000000",
+      "data": "0",
+      "name": "integer",
+      "type": "int",
+      "width": 32
+     }
+    },
+    {
+     "name": "data",
+     "value": {
+      "data": "null",
+      "name": "pointer",
+      "type": "int *"
+     }
+    }
+   ],
+   "name": "struct"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$1.@java.lang.Object",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "members": [
+    {
+     "name": "@class_identifier",
+     "value": {
+      "data": "java::java.lang.Class",
+      "name": "string"
+     }
+    },
+    {
+     "name": "cproverMonitorCount",
+     "value": {
+      "binary": "00000000000000000000000000000000",
+      "data": "0",
+      "name": "integer",
+      "type": "int",
+      "width": 32
+     }
+    }
+   ],
+   "name": "struct"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$1.@java.lang.Object.@class_identifier",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "java::java.lang.Class",
+   "name": "string"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$1.@java.lang.Object.cproverMonitorCount",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$1.length",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$1.data",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "null",
+   "name": "pointer",
+   "type": "int *"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "p1",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "dynamic_object$1",
+   "name": "pointer",
+   "type": "struct java::array[int] *"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$1.@java.lang.Object.@class_identifier",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "java::array[int]",
+   "name": "string"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$1.@java.lang.Object.cproverMonitorCount",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$1.length",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$1.data",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "null",
+   "name": "pointer",
+   "type": "int *"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$1.length",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000010",
+   "data": "2",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": true,
+  "internal": true,
+  "lhs": "tmp_new_data_array",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "null",
+   "name": "pointer",
+   "type": "int *"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "tmp_new_data_array",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "dynamic_array",
+   "name": "pointer",
+   "type": "int *"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$1.data",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "dynamic_array",
+   "name": "pointer",
+   "type": "int *"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_array",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "elements": [
+    {
+     "index": 0,
+     "value": {
+      "binary": "00000000000000000000000000000000",
+      "data": "0",
+      "name": "integer",
+      "type": "int",
+      "width": 32
+     }
+    },
+    {
+     "index": 1,
+     "value": {
+      "binary": "00000000000000000000000000000000",
+      "data": "0",
+      "name": "integer",
+      "type": "int",
+      "width": 32
+     }
+    },
+    {
+     "index": 2,
+     "value": {
+      "binary": "00000000000000000000000000000000",
+      "data": "0",
+      "name": "integer",
+      "type": "int",
+      "width": 32
+     }
+    }
+   ],
+   "name": "array"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_array[0L]",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_array[1L]",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_array[2L]",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$2",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "elements": [
+    {
+     "index": 0,
+     "value": {
+      "binary": "00000000000000000000000000000000",
+      "data": "0",
+      "name": "integer",
+      "type": "int",
+      "width": 32
+     }
+    },
+    {
+     "index": 1,
+     "value": {
+      "binary": "00000000000000000000000000000000",
+      "data": "0",
+      "name": "integer",
+      "type": "int",
+      "width": 32
+     }
+    },
+    {
+     "index": 2,
+     "value": {
+      "binary": "00000000000000000000000000000000",
+      "data": "0",
+      "name": "integer",
+      "type": "int",
+      "width": 32
+     }
+    }
+   ],
+   "name": "array"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$2[0L]",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$2[1L]",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$2[2L]",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "array_data_init",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "dynamic_object$2",
+   "name": "pointer",
+   "type": "int (*)[3]"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$2",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "elements": [
+    {
+     "index": 0,
+     "value": {
+      "binary": "00000000000000000000000000000000",
+      "data": "0",
+      "name": "integer",
+      "type": "int",
+      "width": 32
+     }
+    },
+    {
+     "index": 1,
+     "value": {
+      "binary": "00000000000000000000000000000111",
+      "data": "7",
+      "name": "integer",
+      "type": "int",
+      "width": 32
+     }
+    },
+    {
+     "index": 2,
+     "value": {
+      "binary": "00000000000000000000000000000000",
+      "data": "0",
+      "name": "integer",
+      "type": "int",
+      "width": 32
+     }
+    }
+   ],
+   "name": "array"
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$2[0L]",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$2[1L]",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000111",
+   "data": "7",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$2[2L]",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "binary": "00000000000000000000000000000000",
+   "data": "0",
+   "name": "integer",
+   "type": "int",
+   "width": 32
+  }
+ },
+ {
+  "assignmentType": "variable",
+  "hidden": false,
+  "internal": true,
+  "lhs": "dynamic_object$1.data",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "dynamic_object$2",
+   "name": "pointer",
+   "type": "int *"
+  }
+ },
+ {
+  "hidden": false,
+  "inputID": "p1",
+  "internal": true,
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "input",
+  "thread": 0,
+  "values": [
+   {
+    "data": "dynamic_object$1",
+    "name": "pointer",
+    "type": "struct java::array[int] *"
+   }
+  ]
+ },
+ {
+  "function": {
+   "displayName": "VerifyHarness.check(java.lang.String, int[])",
+   "identifier": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "sourceLocation": {
+    "file": "VerifyHarness.java",
+    "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+    "line": "3"
+   }
+  },
+  "hidden": false,
+  "internal": false,
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "function-call",
+  "thread": 0
+ },
+ {
+  "assignmentType": "actual-parameter",
+  "hidden": false,
+  "internal": false,
+  "lhs": "p0",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "dynamic_object",
+   "name": "pointer",
+   "type": "struct java.lang.String *"
+  }
+ },
+ {
+  "assignmentType": "actual-parameter",
+  "hidden": false,
+  "internal": false,
+  "lhs": "p1",
+  "mode": "java",
+  "sourceLocation": {
+   "file": "VerifyHarness.java",
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V",
+   "line": "3"
+  },
+  "stepType": "assignment",
+  "thread": 0,
+  "value": {
+   "data": "dynamic_object$1",
+   "name": "pointer",
+   "type": "struct java::array[int] *"
+  }
+ },
+ {
+  "stepType": "function-call",
+  "sourceLocation": {
+   "function": "java::jbmcverify.correct.p.C.m:()V"
+  },
+  "function": {
+   "identifier": "java::jbmcverify.correct.p.C.m:()V"
+  }
+ },
+ {
+  "stepType": "assignment",
+  "lhs": "p0",
+  "sourceLocation": {
+   "function": "java::VerifyHarness.check:(Ljava/lang/String;[I)V"
+  },
+  "value": {
+   "name": "pointer",
+   "data": "null"
+  }
+ }
+]

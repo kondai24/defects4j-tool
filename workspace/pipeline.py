@@ -7,7 +7,8 @@ Subcommands:
 - prompts_copy: copy prompts from one dir to another based on <to_dir>/results.csv
 - test: run defects4j test for rows in <target_dir>/results.csv and update it
 - fix: run LLM-based fix (FIX_PROVIDER=claude|codex) for rows in <target_dir>/results.csv (requires prompts next to bug files)
-- run: run a multi-variant workflow (checkout/prompts/fix/test) from a YAML plan file
+- verify: compare the LLM-fixed and developer-fixed methods with JBMC and add verify_* columns to results.csv
+- run: run a multi-variant workflow (checkout/prompts/fix/test/verify) from a YAML plan file
 """
 
 from __future__ import annotations
@@ -17,11 +18,11 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TextIO
 
-from defects4j_tools import batch_checkout, batch_fix, batch_test, generate_prompts, prompts_copy
+from defects4j_tools import batch_checkout, batch_fix, batch_test, batch_verify, generate_prompts, prompts_copy
 
 
 DEFAULT_STEPS = ["checkout", "prompts", "fix", "test"]
-VALID_STEPS = {"checkout", "prompts", "test", "fix"}
+VALID_STEPS = {"checkout", "prompts", "test", "fix", "verify"}
 VALID_PROMPTS_TYPE = {"generate", "copy"}
 
 
@@ -59,7 +60,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_fix.add_argument("--effort", choices=["low", "medium", "high", "xhigh", "max"],
                        default=None, help="Claude reasoning effort (omitted: model default)")
 
-    p_run = sub.add_parser("run", help="Run checkout/prompts/fix/test for multiple variants from a YAML plan")
+    p_verify = sub.add_parser(
+        "verify",
+        help="Detect overfitting patches with JBMC using <target_dir>/results.csv (adds verify_* columns)",
+    )
+    batch_verify.add_arguments(p_verify)
+
+    p_run = sub.add_parser("run", help="Run checkout/prompts/fix/test/verify for multiple variants from a YAML plan")
     p_run.add_argument("--plan", dest="plan_path", required=True, help="YAML plan file path")
     p_run.add_argument(
         "--only",
@@ -165,6 +172,9 @@ def _run_variant(
     model = _variant_model(defaults, variant)
     effort = variant.get("effort", defaults.get("effort"))
     continue_on_error = bool(variant.get("continue_on_error", defaults.get("continue_on_error", True)))
+    verify_config = batch_verify.config_from_plan(variant.get("verify", defaults.get("verify")))
+    if verify_config.correct_dir:
+        verify_config.correct_dir = _resolve_path(run_base_dir, verify_config.correct_dir)
 
     prompts_cfg = variant.get("prompts", defaults.get("prompts", {"type": "generate", "mode": "normal"}))
     prompts_cfg = _require_dict(prompts_cfg, f"variants[{name}].prompts")
@@ -187,7 +197,8 @@ def _run_variant(
         return 2
 
     log_path = out_dir_path / "run_all_results.txt"
-    with log_path.open("w", encoding="utf-8", newline="\n") as log_fh:
+    # Append: a later verify-only run must not erase the log of the original experiment.
+    with log_path.open("a", encoding="utf-8", newline="\n") as log_fh:
         old_out, old_err = sys.stdout, sys.stderr
         sys.stdout = _Tee(old_out, log_fh)  # type: ignore[assignment]
         sys.stderr = _Tee(old_err, log_fh)  # type: ignore[assignment]
@@ -226,6 +237,8 @@ def _run_variant(
                     rc = batch_fix.run(out_dir, model=model, effort=effort)
                 elif step == "test":
                     rc = batch_test.run(out_dir)
+                elif step == "verify":
+                    rc = batch_verify.run(out_dir, verify_config)
                 else:
                     raise ValueError(f"Unknown step: {step}")
 
@@ -286,17 +299,33 @@ def run_plan(plan_path: str, only: Optional[str]) -> int:
     ]
 
     # Check every selected output before creating directories or running any step.
+    # A variant that starts with checkout gets a fresh out_dir. A variant without checkout
+    # (e.g. steps: [verify] on a finished experiment) reuses its out_dir when it exists.
     output_dirs = set()
+    new_dirs: List[Path] = []
     for vd in selected:
         name = str(vd.get("name") or vd.get("out_dir") or "").strip()
         raw = str(vd.get("out_dir") or "").strip()
         if not raw:
             print(f"Error: variant '{name}' is missing required key: out_dir", file=sys.stderr)
             return 2
-        path = Path(_resolve_path(run_base_dir, raw))
-        if path.exists() or path.is_symlink():
-            print(f"Error: variant '{name}': out_dir already exists: {path}", file=sys.stderr)
+        try:
+            steps = _normalize_steps(vd.get("steps", defaults.get("steps")), f"variants[{name}].steps")
+            batch_verify.config_from_plan(vd.get("verify", defaults.get("verify")))
+        except ValueError as exc:
+            print(f"Error: variant '{name}': {exc}", file=sys.stderr)
             return 2
+        path = Path(_resolve_path(run_base_dir, raw))
+        if "checkout" in steps:
+            if path.exists() or path.is_symlink():
+                print(f"Error: variant '{name}': out_dir already exists: {path}", file=sys.stderr)
+                return 2
+            new_dirs.append(path)
+        elif not path.is_dir():
+            if path.exists() or path.is_symlink():
+                print(f"Error: variant '{name}': out_dir is not a directory: {path}", file=sys.stderr)
+                return 2
+            new_dirs.append(path)
         if path in output_dirs:
             print(f"Error: duplicate out_dir: {path}", file=sys.stderr)
             return 2
@@ -313,8 +342,7 @@ def run_plan(plan_path: str, only: Optional[str]) -> int:
             print(f"Error: variant '{name}': {error}", file=sys.stderr)
             return 2
 
-    for vd in selected:
-        path = Path(_resolve_path(run_base_dir, str(vd["out_dir"]).strip()))
+    for path in new_dirs:
         try:
             path.mkdir(parents=True, exist_ok=False)
         except OSError as exc:
@@ -357,6 +385,9 @@ def main() -> int:
 
     if args.command == "fix":
         return batch_fix.run(args.target_dir, model=args.model, effort=args.effort)
+
+    if args.command == "verify":
+        return batch_verify.run(args.target_dir, batch_verify.config_from_args(args), args.bugs)
 
     if args.command == "run":
         return run_plan(args.plan_path, args.only)
