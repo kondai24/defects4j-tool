@@ -26,7 +26,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from . import verify_harness, verify_jbmc, verify_targets
 from .verify_jbmc import JbmcOptions
@@ -551,16 +551,8 @@ def _write_rows(csv_file: Path, fieldnames: List[str], rows: List[Dict[str, str]
     tmp.replace(csv_file)
 
 
-def _selected(rows: List[Dict[str, str]], bugs: Optional[Iterable[str]]) -> List[Dict[str, str]]:
-    wanted = {b.strip() for b in bugs or [] if b.strip()}
-    picked = [r for r in rows if r.get("project") and r.get("id")]
-    if wanted:
-        picked = [r for r in picked if f"{r['project'].strip()}-{r['id'].strip()}" in wanted]
-    return picked
-
-
-def run(target_dir: str, config: Optional[VerifyConfig] = None, bugs: Optional[Iterable[str]] = None) -> int:
-    """Verify rows of <target_dir>/results.csv (all rows, or only ``bugs`` like ["Math-99"])."""
+def run(target_dir: str, config: Optional[VerifyConfig] = None) -> int:
+    """Verify every row of <target_dir>/results.csv."""
     config = config or VerifyConfig()
     target = Path(target_dir).resolve()
     csv_file = target / "results.csv"
@@ -577,10 +569,7 @@ def run(target_dir: str, config: Optional[VerifyConfig] = None, bugs: Optional[I
     correct_root = Path(config.correct_dir).resolve() if config.correct_dir else target.parent / "correct"
 
     fieldnames, rows = _read_rows(csv_file)
-    selected = _selected(rows, bugs)
-    if bugs and not selected:
-        print(f"Error: none of {sorted(bugs)} is in {csv_file}", file=sys.stderr)
-        return 1
+    selected = [r for r in rows if r.get("project") and r.get("id")]
     for row in selected:  # clear stale values first so an interrupted run never mixes old and new results
         for col in VERIFY_COLUMNS:
             row[col] = ""
@@ -623,13 +612,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     add_arguments(parser)
     args = parser.parse_args()
-    sys.exit(run(args.target_dir, config_from_args(args), args.bugs))
+    sys.exit(run(args.target_dir, config_from_args(args)))
 
 
 def add_arguments(parser) -> None:
     parser.add_argument("--dir", dest="target_dir", required=True, help="Target directory (contains results.csv)")
-    parser.add_argument("--bugs", type=lambda s: [x for x in s.split(",") if x.strip()], default=None,
-                        help="Comma-separated bugs to verify, e.g. Math-99,Lang-41 (default: all rows)")
     parser.add_argument("--correct-dir", default=None, help="Cache of correct versions (default: <dir>/../correct)")
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_SEC, help="JBMC time limit per bug (sec)")
     parser.add_argument("--unwind", type=int, default=JbmcOptions.unwind, help="Initial loop bound N for JBMC")

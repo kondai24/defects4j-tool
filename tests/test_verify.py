@@ -310,7 +310,7 @@ class CorrectCheckoutTests(unittest.TestCase):
 
 
 class ResultsCsvTests(unittest.TestCase):
-    def test_adds_columns_keeps_others_and_updates_only_selected_rows(self):
+    def test_adds_columns_and_keeps_other_columns(self):
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "Normal"
             target.mkdir()
@@ -325,14 +325,14 @@ class ResultsCsvTests(unittest.TestCase):
                  patch.object(batch_verify.shutil, "which", return_value="/usr/bin/jbmc"), \
                  patch.object(batch_verify.verify_jbmc, "jbmc_version", return_value="6.11.0"), \
                  contextlib.redirect_stdout(io.StringIO()):
-                self.assertEqual(batch_verify.run(str(target), bugs=["Math-99"]), 0)
-            row.assert_called_once()
+                self.assertEqual(batch_verify.run(str(target)), 0)
+            self.assertEqual(row.call_count, 2)
             rows = list(csv.DictReader(csv_file.open()))
             self.assertEqual(list(rows[0]), ["project", "id", "test_status", "verify_status", "verify_reason",
                                              "verify_time_sec"])
             self.assertEqual((rows[0]["test_status"], rows[0]["verify_status"], rows[0]["verify_reason"],
                               rows[0]["verify_time_sec"]), ("success", "fail", "return_mismatch", "1.50"))
-            self.assertEqual((rows[1]["test_status"], rows[1]["verify_status"]), ("fail", ""))
+            self.assertEqual((rows[1]["test_status"], rows[1]["verify_status"]), ("fail", "fail"))
 
 
 class PlanTests(unittest.TestCase):

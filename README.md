@@ -146,11 +146,7 @@ uv run --no-project --with claude-agent-sdk==0.2.166 --with openai-codex==0.162.
 テストに通っても実は誤っている修正（過学習パッチ）を見つけるため、LLM の修正版と Defects4J の正解版（開発者の修正）を JBMC で比べます。LLM は使いません。設計の経緯は [ADR 0002](docs/adr/0002-jbmc-verify-step.md) を参照してください。
 
 ```bash
-# results.csv の全行
 python pipeline.py verify --dir runs/Normal_opus-5.5_medium
-
-# 一部のバグだけ
-python pipeline.py verify --dir runs/Normal_opus-5.5_medium --bugs Math-93,Math-99
 ```
 
 - 比べるのは、`src.patch` で開発者が変更したメソッドだけです。両方の版に同じ任意の入力を与え、返り値か例外のクラスが異なれば `fail` にします。例外のメッセージは比べません。
@@ -158,7 +154,7 @@ python pipeline.py verify --dir runs/Normal_opus-5.5_medium --bugs Math-93,Math-
 - JBMC の反例は JVM で再実行して確かめ、再現した場合だけ `fail` にします。
 - `success` は「文字列・配列の長さとループの上限の範囲で違いが見つからず、ループの上限も足りていた」という意味です。正しさの証明ではありません。
 - 正解版は `<dir>/../correct/<Project>-<id>/`（通常は `runs/correct/`）に、まだない場合だけ checkout して 3 方式で共用します。checkout が完了すると、隣に `<Project>-<id>.complete` を置きます。この印がないフォルダは削除して取り直します。正解版の中身は書き換えません。
-- 終わった実験フォルダに後から実行できます。選んだ行の verify 列だけを書き換え、ほかの列は残します。
+- 終わった実験フォルダに後から実行できます。verify 列だけを書き換え、ほかの列は残します。
 
 `results.csv` に追加する列:
 
@@ -192,7 +188,6 @@ python pipeline.py verify --dir runs/Normal_opus-5.5_medium --bugs Math-93,Math-
 
 | オプション | 既定値 | 内容 |
 | --- | --- | --- |
-| `--bugs` | 全行 | `Math-93,Lang-41` のようにカンマ区切り |
 | `--correct-dir` | `<dir>/../correct` | 正解版の保存先 |
 | `--timeout` | 300 | 1 バグあたりの時間の上限（秒）。対象メソッドが複数あれば残り時間を等分 |
 | `--unwind` / `--max-unwind` | 8 / 64 | ループの上限の初期値と最大値（倍にしながら上げる） |

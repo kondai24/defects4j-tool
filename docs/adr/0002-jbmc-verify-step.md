@@ -162,9 +162,9 @@ flowchart TD
 
 ### パイプラインへの組み込み
 
-- `pipeline.py verify --dir <run_dir> [--bugs ...]` を単独で実行できる。plan の `steps` にも `verify` を書ける。
+- `pipeline.py verify --dir <run_dir>` を単独で実行できる。plan の `steps` にも `verify` を書ける。
 - `checkout` を含まない plan は、既存の実験フォルダ（`out_dir`）に後から実行するものとみなす。このとき `out_dir` は存在している必要がある。`run_all_results.txt` は上書きせず追記する。
-- `verify` は選んだ行の 3 列を最初に空にし、1 行終わるごとに `results.csv` を書き直す。
+- `verify` は全行の 3 列を最初に空にし、1 行終わるごとに `results.csv` を書き直す。
 
 ## 前提・リスク
 

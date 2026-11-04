@@ -387,7 +387,7 @@ def main() -> int:
         return batch_fix.run(args.target_dir, model=args.model, effort=args.effort)
 
     if args.command == "verify":
-        return batch_verify.run(args.target_dir, batch_verify.config_from_args(args), args.bugs)
+        return batch_verify.run(args.target_dir, batch_verify.config_from_args(args))
 
     if args.command == "run":
         return run_plan(args.plan_path, args.only)
