@@ -1,0 +1,22 @@
+# Run verify afterwards on the finished opus-5.5 medium experiment (inside /workspace):
+# python pipeline.py run --plan plan-verify-opus55-medium.yml
+# Steps without checkout reuse the existing out_dir; only the verify_* columns of results.csv change.
+
+in_csv: experiment.csv
+
+defaults:
+  steps: [verify]
+  continue_on_error: true
+  verify:
+    timeout: 300  # seconds per bug
+    # correct_dir: runs/correct  # default: <out_dir>/../correct
+
+variants:
+  - name: normal-opus55-medium
+    out_dir: runs/Normal_opus-5.5_medium
+
+  - name: cot_with_ast-opus55-medium
+    out_dir: runs/CoT-with-AST_opus-5.5_medium
+
+  - name: cot_with_cfg_pdg-opus55-medium
+    out_dir: runs/CoT-with-CFG-PDG_opus-5.5_medium

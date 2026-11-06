@@ -3,7 +3,7 @@
 in_csv: experiment_opus55_trial.csv
 
 defaults:
-  steps: [checkout, prompts, fix, test]
+  steps: [checkout, prompts, fix, test, verify]
   model: claude-opus-5-5
   effort: medium
   continue_on_error: false

@@ -1,6 +1,6 @@
 # Defects4J Workspace Scripts
 
-Defects4J の checkout / prompt 生成 / fix / test を `pipeline.py` で実行するための手順です。
+Defects4J の checkout / prompt 生成 / fix / test / verify を `pipeline.py` で実行するための手順です。
 
 ## 最初にやること（Dockerのセットアップ）
 
@@ -9,6 +9,8 @@ Defects4J の checkout / prompt 生成 / fix / test を `pipeline.py` で実行�
 ```bash
 docker compose up -d
 ```
+
+`verify` で使う JBMC はイメージに含まれています。以前のイメージを使っている場合は、`docker compose up -d --build` で作り直してください。
 
 コンテナに入ります（推奨）。
 
@@ -68,12 +70,12 @@ cwd 外（例: 正解パッチがある `/defects4j/framework/projects/*/patches
 `fix_results.txt` に `[警告] cwd 外へのアクセスを検出しました` として対象パスが記録され、SUMMARY の `Outside cwd access (warning)` に件数が出ます。
 検出はコマンド文字列とファイル変更のパスから行うため、誤検出・見逃しがあり得ます。
 
-## 個別実行（checkout -> prompt -> fix -> test）
+## 個別実行（checkout -> prompt -> fix -> test -> verify）
 
 checkout・修正したコードや実験結果は `/workspace/runs/`（ホスト側の `workspace/runs/`）に置きます。
 このフォルダ全体を `.gitignore` で除外しているため、配下の生成物はこのリポジトリの Git 管理対象になりません。
 
-実行順は次の 4 ステップです。
+実行順は次の 5 ステップです。
 
 ```bash
 # 1) checkout
@@ -87,6 +89,9 @@ python pipeline.py fix --dir runs/Normal --model claude-sonnet-5-5
 
 # 4) test
 python pipeline.py test --dir runs/Normal
+
+# 5) verify（JBMC で正解版と比べる。下記「verify」を参照）
+python pipeline.py verify --dir runs/Normal
 ```
 
 主な生成・更新ファイル:
@@ -136,6 +141,73 @@ python pipeline.py test --dir runs/Normal
 uv run --no-project --with claude-agent-sdk==0.2.166 --with openai-codex==0.162.1 --with pyyaml --with networkx python -m unittest discover -s tests -v
 ```
 
+## verify（JBMC による過学習パッチの検出）
+
+テストに通っても実は誤っている修正（過学習パッチ）を見つけるため、LLM の修正版と Defects4J の正解版（開発者の修正）を JBMC で比べます。LLM は使いません。設計の経緯は [ADR 0002](docs/adr/0002-jbmc-verify-step.md) を参照してください。
+
+```bash
+python pipeline.py verify --dir runs/Normal_opus-5.5_medium
+```
+
+- 比べるのは、`src.patch` で開発者が変更したメソッドだけです。両方の版に同じ任意の入力を与え、返り値か例外のクラスが異なれば `fail` にします。例外のメッセージは比べません。
+- 対象は、引数が `int`・`boolean`・`String` とそれらの配列だけの static メソッドです。それ以外は `unverifiable`（`unsupported_signature`）になります。
+- JBMC の反例は JVM で再実行して確かめ、再現した場合だけ `fail` にします。
+- `success` は「文字列・配列の長さとループの上限の範囲で違いが見つからず、ループの上限も足りていた」という意味です。正しさの証明ではありません。
+- 正解版は `<dir>/../correct/<Project>-<id>/`（通常は `runs/correct/`）に、まだない場合だけ checkout して 3 方式で共用します。checkout が完了すると、隣に `<Project>-<id>.complete` を置きます。この印がないフォルダは削除して取り直します。正解版の中身は書き換えません。
+- 終わった実験フォルダに後から実行できます。verify 列だけを書き換え、ほかの列は残します。
+
+`results.csv` に追加する列:
+
+| カラム | 内容 |
+| --- | --- |
+| `verify_status` | `success` / `fail` / `unverifiable` |
+| `verify_reason` | `fail` のとき `return_mismatch` / `exception_mismatch`。`unverifiable` のとき理由（下表） |
+| `verify_time_sec` | 1 バグの検査時間（秒） |
+
+主な `unverifiable` の理由:
+
+| 値 | 意味 |
+| --- | --- |
+| `compile_error` | 修正版がコンパイルできない |
+| `unsupported_signature` | コンストラクタ、インスタンスメソッド、または扱えない引数・返り値の型 |
+| `no_target_method` / `target_missing` | 比べられるメソッドがない、または修正版に同じ static シグネチャのメソッドがない |
+| `timeout` / `memory_limit` | 時間（既定 300 秒/バグ）またはメモリ（既定 4096 MB）の上限を超えた |
+| `unwind_limit` | ループの上限を最大（既定 64）まで上げても足りなかった |
+| `spurious_counterexample` | JBMC の反例が JVM で再現しなかった（浮動小数点の関数などで起きやすい） |
+| `unconfirmed_counterexample` / `jbmc_error` ほか | 反例を確かめられなかった、または JBMC が止まった |
+
+全ての値は ADR 0002 の表にあります。
+
+バグごとの詳細は `<dir>/verify/<Project>-<id>/` に保存されます。
+
+- `result.json`: 比べたメソッドとその結果、反例の入力と JVM での再現結果、使ったループの上限、JBMC のバージョンと設定、LLM がバグ箇所以外を変更したか（`llm_changes`）
+- `logs/`: JBMC の JSON 出力（1 回ごと）と、実行したコマンド
+- `harness/`: 生成した検査用プログラム（`VerifyHarness.java`）と、反例の再現用プログラム
+
+主なオプション:
+
+| オプション | 既定値 | 内容 |
+| --- | --- | --- |
+| `--correct-dir` | `<dir>/../correct` | 正解版の保存先 |
+| `--timeout` | 300 | 1 バグあたりの時間の上限（秒）。対象メソッドが複数あれば残り時間を等分 |
+| `--unwind` / `--max-unwind` | 8 / 64 | ループの上限の初期値と最大値（倍にしながら上げる） |
+| `--max-string-length` / `--max-array-length` | 6 / 4 | 任意の入力の文字列・配列の最大長 |
+| `--memory-limit-mb` | 4096 | JBMC のメモリの上限 |
+| `--keep-work` | なし | コンパイル結果などの作業ファイル（`.work/`）を残す |
+
+plan で実行する場合は `steps` に `verify` を加えます。`verify:` に上の設定（`timeout`、`unwind`、`max_unwind`、`max_string_length`、`max_array_length`、`memory_limit_mb`、`correct_dir`）を書けます。終わった実験フォルダに後から実行する場合は、`checkout` を含まない plan を使います。
+
+```yaml
+in_csv: experiment.csv
+defaults:
+  steps: [verify]
+  verify:
+    timeout: 300
+variants:
+  - name: normal
+    out_dir: runs/Normal_opus-5.5_medium
+```
+
 ## 一括実行（plan モード: run --plan）
 
 複数の出力ディレクトリ（variant）をまとめて実行する場合は `run --plan` を使います。
@@ -153,7 +225,8 @@ python pipeline.py run --plan plan.yml --only normal-gpt4.1,cot_with_ast-gpt4.1
 ### `plan.yml` の使い方（`workspace/plan.yml` を例に）
 
 - `in_csv`: 入力 CSV（例: `experiment.csv`）
-- `defaults.steps`: 実行順（通常は `[checkout, prompts, fix, test]`）
+- `defaults.steps`: 実行順（通常は `[checkout, prompts, fix, test, verify]`）
+- `defaults.verify`: verify の設定（上記「verify」を参照。省略可）
 - `defaults.model`: fix で使うモデル名（`FIX_PROVIDER` に合ったもの。未指定だとエラー）
 - `defaults.effort`: Claude の reasoning effort（`low` / `medium` / `high` / `xhigh` / `max`）。省略時はモデルの既定値。Codex での指定はエラー
 - `variants[].model` / `variants[].effort`: variant ごとに defaults を上書き（`effort: null` はモデルの既定値に戻す）
@@ -172,7 +245,7 @@ python pipeline.py run --plan plan.yml --only normal-gpt4.1,cot_with_ast-gpt4.1
 
 ```yaml
 defaults:
-  steps: [checkout, prompts, fix, test]
+  steps: [checkout, prompts, fix, test, verify]
   model: claude-opus-5-5
   effort: medium
   continue_on_error: false
@@ -180,7 +253,8 @@ defaults:
 
 この plan の出力先は `runs/trial_opus55_normal`、`runs/trial_opus55_ast`、`runs/trial_opus55_cfg_pdg` です。
 plan モードでは出力先を親フォルダごと自動作成します。事前の `mkdir` は不要です。
-実行対象の出力先が1つでも既に存在する場合（空フォルダも含む）は、全 variant の処理を開始せずエラーで停止します。
+`checkout` を含む variant の出力先が1つでも既に存在する場合（空フォルダも含む）は、全 variant の処理を開始せずエラーで停止します。
+`checkout` を含まない variant（例: `steps: [verify]`）は、既存の出力先をそのまま使います。`run_all_results.txt` には追記します。
 `--only` を指定した場合は、選択した variant の出力先だけを確認・作成します。
 `out_dir` は実行時のカレントディレクトリ基準なので、以下はコンテナ内 `/workspace` で実行してください。
 
